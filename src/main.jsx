@@ -83,6 +83,12 @@ async function deleteGoogleCalendarEvent(accessToken,eventId){
  if(!accessToken||!eventId)return;
  return googleCalendarRequest(accessToken,`/calendars/primary/events/${encodeURIComponent(eventId)}`,{method:'DELETE'});
 }
+function googleEventIdForTask(task){return task?.id?`orbit${String(task.id).replace(/-/g,'')}`.slice(0,1024):null}
+async function deleteCalendarEventForTask(accessToken,task){
+ const eventId=task?.google_event_id||googleEventIdForTask(task);
+ if(!accessToken||!eventId)return;
+ try{await deleteGoogleCalendarEvent(accessToken,eventId)}catch(e){if(e.status!==404)throw e}
+}
 async function syncTaskToGoogleCalendar(accessToken,task,subjectName){
  if(!accessToken||!task)return task;
  if(task.timetable_cancelled){if(task.google_event_id)await deleteGoogleCalendarEvent(accessToken,task.google_event_id).catch(error=>{if(error.status!==404)throw error});return {...task,google_event_id:null};}
@@ -253,22 +259,27 @@ function App(){
  async function syncExistingTasksToCalendar(){
   if(!googleProviderToken||!user||!tasks.length)return;
   const map=Object.fromEntries(subjects.map(s=>[s.id,s]));
-  let changed=false; const nextTasks=[];
-  for(const task of tasks){
-   if(!task.due_date||task.timetable_cancelled){nextTasks.push(task);continue}
-   try{
-    const synced=await syncTaskToGoogleCalendar(googleProviderToken,task,map[task.subject_id]?.name);
-    if(synced.google_event_id!==task.google_event_id){
-     const {data,error}=await supabase.from('tasks').update({google_event_id:synced.google_event_id||null}).eq('id',task.id).select().single();
-     if(!error&&data){nextTasks.push(data);changed=true}else nextTasks.push(synced);
-    }else nextTasks.push(task);
-   }catch(error){
-    nextTasks.push(task);
-    if(error.status===401||error.status===403){console.warn('Google Calendar access issue:',error.message);break}
-    console.warn('Google Calendar sync failed:',error);
-   }
+  const candidates=tasks.filter(task=>task.due_date&&!task.timetable_cancelled);
+  const results=[];
+  for(let i=0;i<candidates.length;i+=6){
+   const batch=candidates.slice(i,i+6);
+   const syncedBatch=await Promise.all(batch.map(async task=>{
+    try{
+     const synced=await syncTaskToGoogleCalendar(googleProviderToken,task,map[task.subject_id]?.name);
+     if(synced.google_event_id!==task.google_event_id){
+      const {data,error}=await supabase.from('tasks').update({google_event_id:synced.google_event_id||null}).eq('id',task.id).select().single();
+      return !error&&data?data:synced;
+     }
+     return task;
+    }catch(error){
+     if(error.status===401||error.status===403)console.warn('Google Calendar access issue:',error.message);
+     else console.warn('Google Calendar sync failed:',error);
+     return task;
+    }
+   }));
+   results.push(...syncedBatch);
   }
-  if(changed)setTasks(nextTasks);
+  if(results.length){const mapById=new Map(results.map(x=>[x.id,x]));setTasks(x=>x.map(task=>mapById.get(task.id)||task));}
  }
  async function login(){setSettingsPanel(null);setAuthModal(true)}
  async function loginGoogle(){if(!cloudReady){alert('Cloud sign-in needs Supabase setup. Add your Supabase URL and publishable key first.');return}const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin,scopes:GOOGLE_CALENDAR_SCOPE,queryParams:{access_type:'offline',prompt:'consent'}}});if(error)alert(`Google sign-in failed. ${error.message}`);else setAuthModal(false)}
@@ -367,28 +378,42 @@ function App(){
  async function deleteTask(t){
   if(!window.confirm(`Delete “${t.title||'Untitled task'}”? This cannot be undone.`)) return;
   if(cloudReady&&user){
-    if(t.google_event_id){
-      if(!googleProviderToken){alert('This task is linked to Google Calendar, but Calendar access is not connected. Sign out and sign in with Google again, then delete the task.');return}
-      try{await deleteGoogleCalendarEvent(googleProviderToken,t.google_event_id)}catch(e){if(e.status!==404){if(e.status===401)alert('Google Calendar access has expired. Sign out and sign in with Google again, then delete the task.');else alert(`Could not remove the task from Google Calendar. ${e.message||'Please try again.'}`);return}}
+    if(t.google_event_id&&!googleProviderToken){
+      alert('Sign out and sign in with Google again to reconnect Calendar before deleting this task.');
+      return;
     }
-    const {error}=await supabase.from('tasks').delete().eq('id',t.id);if(error){alert(`Could not delete task. ${error.message}`);return}
+    try{if(googleProviderToken)await deleteCalendarEventForTask(googleProviderToken,t)}catch(e){
+      if(e.status===401)alert('Google Calendar access has expired. Sign out and sign in with Google again, then delete the task.');
+      else alert(`Could not remove the task from Google Calendar. ${e.message||'Please try again.'}`);
+      return;
+    }
+    const {error}=await supabase.from('tasks').delete().eq('id',t.id);
+    if(error){alert(`Could not delete task. ${error.message}`);return}
   }
   setTasks(x=>x.filter(a=>a.id!==t.id));
  }
  async function deleteTimetableGroup(task){
-  const title=String(task?.title||'').trim(); if(!title)return;
-  const group=tasks.filter(x=>x.timetable_source&&String(x.title||'').trim().toLowerCase()===title.toLowerCase());
+  const seriesKey=String(task?.timetable_key||'').trim();
+  const title=String(task?.title||'').trim()||'Class';
+  const group=seriesKey
+    ? tasks.filter(x=>x.timetable_source&&String(x.timetable_key||'').trim()===seriesKey)
+    : tasks.filter(x=>x.timetable_source&&String(x.title||'').trim().toLowerCase()===title.toLowerCase());
   if(!group.length)return;
   if(!window.confirm(`Delete all ${group.length} scheduled “${title}” classes? This removes every timetable occurrence for this class and linked Google Calendar events.`))return;
   if(cloudReady&&user){
-   const linked=group.filter(item=>item.google_event_id);
-   if(linked.length&&!googleProviderToken){alert('These classes are linked to Google Calendar, but Calendar access is not connected. Sign out and sign in with Google again before deleting the series.');return}
-   for(const item of linked){
-    try{await deleteGoogleCalendarEvent(googleProviderToken,item.google_event_id)}catch(e){if(e.status!==404){alert(`Could not remove “${title}” from Google Calendar. ${e.message||''}`);return}}
+   if(!googleProviderToken){alert('Sign out and sign in with Google again to reconnect Calendar before deleting this class series.');return}
+   try{
+    await Promise.all(group.map(item=>deleteCalendarEventForTask(googleProviderToken,item)));
+   }catch(e){
+    if(e.status===401)alert('Google Calendar access has expired. Sign out and sign in with Google again, then delete the class series.');
+    else alert(`Could not remove “${title}” from Google Calendar. ${e.message||''}`);
+    return;
    }
-   const {error}=await supabase.from('tasks').delete().in('id',group.map(x=>x.id)); if(error){alert(`Could not delete the class series. ${error.message}`);return}
+   const {error}=await supabase.from('tasks').delete().in('id',group.map(x=>x.id));
+   if(error){alert(`Could not delete the class series. ${error.message}`);return}
   }
-  setTasks(x=>x.filter(item=>!group.some(g=>g.id===item.id)));
+  const ids=new Set(group.map(x=>x.id));
+  setTasks(x=>x.filter(item=>!ids.has(item.id)));
  }
  async function deleteSubject(subject){
   if(!subject) return;
@@ -452,25 +477,43 @@ function App(){
   if(cloudReady&&user){
    const {data,error}=await supabase.from('tasks').insert(rows.map(({user_id,...r})=>({...r,user_id:user.id}))).select();
    if(error){alert(`Could not import timetable. ${error.message}`);return}
-   let imported=data||[];
-   if(googleProviderToken){
-    for(const task of imported){
-     try{
-      const synced=await syncTaskToGoogleCalendar(googleProviderToken,task,subjectMap[task.subject_id]?.name);
-      if(synced.google_event_id){const {data:updated}=await supabase.from('tasks').update({google_event_id:synced.google_event_id}).eq('id',task.id).select().single();if(updated)Object.assign(task,updated)}
-     }catch(e){if(e.status===401){alert('Timetable imported, but Google Calendar access expired. Sign out and sign in again.');break}console.warn('Calendar timetable sync failed:',e)}
-    }
-   }
+   const imported=data||[];
    setTasks(x=>[...imported,...x]);
-  }else setTasks(x=>[...rows.map(r=>({...r,id:uid()})),...x]);
-  setTimetableModal(false);setTab('Timetable');
+   setTimetableModal(false);setTab('Timetable');
+   if(googleProviderToken&&imported.length){
+    // Sync Calendar in small parallel batches so importing a timetable never freezes the UI.
+    const map=Object.fromEntries(subjects.map(s=>[s.id,s]));
+    (async()=>{
+     for(let i=0;i<imported.length;i+=6){
+      const batch=imported.slice(i,i+6);
+      const synced=await Promise.all(batch.map(async task=>{
+       try{
+        const next=await syncTaskToGoogleCalendar(googleProviderToken,task,map[task.subject_id]?.name);
+        if(next.google_event_id){
+         const updated=await supabase.from('tasks').update({google_event_id:next.google_event_id}).eq('id',task.id).select().single();
+         return updated.error?next:updated.data;
+        }
+        return next;
+       }catch(e){console.warn('Calendar timetable sync failed:',e);return task}
+      }));
+      const byId=new Map(synced.map(x=>[x.id,x]));
+      setTasks(x=>x.map(t=>byId.get(t.id)||t));
+     }
+    })();
+   }
+  }else{
+   const localRows=rows.map(r=>({...r,id:uid()}));
+   setTasks(x=>[...localRows,...x]);
+   setTimetableModal(false);setTab('Timetable');
+  }
  }
  async function cancelClass(task){
   if(!task?.timetable_source)return;
   const action=task.timetable_cancelled?'restore':'cancel';
   if(!window.confirm(task.timetable_cancelled?`Restore “${task.title||'Class'}” for this occurrence?`:`Cancel “${task.title||'Class'}” for ${task.due_date||'this occurrence'}?`))return;
   if(cloudReady&&user){
-   if(action==='cancel'&&task.google_event_id){if(!googleProviderToken){alert('This class is linked to Google Calendar. Sign out and sign in again to reconnect Calendar before cancelling it.');return}try{await deleteGoogleCalendarEvent(googleProviderToken,task.google_event_id)}catch(e){if(e.status!==404){alert(`Could not remove this class from Google Calendar. ${e.message||''}`);return}}}
+   if(action==='cancel'&&googleProviderToken){try{await deleteCalendarEventForTask(googleProviderToken,task)}catch(e){if(e.status!==404){alert(`Could not remove this class from Google Calendar. ${e.message||''}`);return}}}
+   if(action==='cancel'&&!googleProviderToken&&task.google_event_id){alert('This class is linked to Google Calendar. Sign out and sign in again to reconnect Calendar before cancelling it.');return}
    const {data,error}=await supabase.from('tasks').update({timetable_cancelled:!task.timetable_cancelled,google_event_id:action==='cancel'?null:task.google_event_id}).eq('id',task.id).select().single();
    if(error){alert(`Could not update class. ${error.message}`);return}
    let next=data;
@@ -494,7 +537,7 @@ function App(){
   else {setTab('Subjects');setSelectedSubject(result.id);}
   clearSearch();
  };
- return <div className={'app density-'+density.toLowerCase()}><aside className={(mobile?'side open':'side')+(sidebarCollapsed?' collapsed':'')}><div className="brand"><div className="logo">✦</div><div className="brandCopy"><b>ORBIT Tracker</b><small>plan, organize, and get things done</small></div><button className="iconbtn close" onClick={()=>setMobile(false)} aria-label="Close sidebar"><X size={18}/></button></div><nav>{[['Dashboard',LayoutDashboard],['Tasks',CheckSquare],['Subjects',BookOpen],['Calendar',CalendarDays],['Timetable',CalendarClock],['Focus',Timer]].map(([n,I])=><button className={tab===n?'nav active':'nav'} onClick={()=>{setTab(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span></button>)}<button className={tab==='Settings'?'nav active':'nav'} onClick={()=>{setTab('Settings');setMobile(false)}}><Settings size={18}/><span>Settings</span></button></nav><div className="sideBottom"><div className="quoteCard"><div className="quoteMark">“</div><p>Small steps, every day.</p><small>Progress is built one task at a time.</small><div className="onlineStatus"><span className="dot onlineDot"/><span>Online</span></div></div></div></aside><main><header><button className="iconbtn menu" onClick={()=>{if(window.innerWidth<=800){setMobile(true)}else{setSidebarCollapsed(v=>{const next=!v;localStorage.setItem('orbit_sidebar_collapsed',next?'1':'0');return next})}}} aria-label={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"} title={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"}><Menu/></button><div className="crumb">{tab}<span> / </span><b>{tab==='Dashboard'?'Today':'Workspace'}</b></div><div className="headActions"><div className={'search '+(searchTerm?'searchActive':'')}><Search size={17}/><input value={search} onFocus={()=>searchTerm&&setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} onKeyDown={e=>{if(e.key==='Enter'&&searchResults[0])openSearchResult(searchResults[0]);if(e.key==='Escape'){clearSearch();setSearchOpen(false)}}} placeholder="Search tasks, notes, subjects..." aria-label="Search tasks, notes, and subjects"/><button type="button" className="searchClear" onClick={()=>{clearSearch();setSearchOpen(false)}} aria-label="Clear search" title="Clear search">{searchTerm?<X size={14}/>:null}</button>{searchTerm&&searchOpen&&<div className="searchResults" role="listbox" aria-label="Search results">{searchResults.length?searchResults.map(result=>{const Icon=result.icon;return <button type="button" className="searchResult" key={result.type+'-'+result.id} onClick={()=>openSearchResult(result)}><span className="searchResultIcon"><Icon size={15}/></span><span className="searchResultText"><b>{result.title}</b><small>{result.meta}</small></span><ArrowUpRight size={14}/></button>}):<div className="searchNoResults"><Search size={16}/><span>No matching tasks or subjects</span></div>}</div>}</div>{user?<div className="profile"><button onClick={()=>setProfileOpen(!profileOpen)} className="avatar">{(user.user_metadata?.full_name||user.email||user.phone||'U')[0].toUpperCase()}</button>{profileOpen&&<div className="profileMenu"><b>{user.user_metadata?.full_name||'User'}</b><small>{user.email||user.phone}</small><button onClick={logout}><LogOut size={15}/> Sign out</button></div>}</div>:<button className="google" onClick={login}>Sign in</button>}</div></header>{tab==='Dashboard'&&<Dashboard progress={progress} dueToday={dueToday} hours={hours} tasks={tasks} subjects={subjects} subjectMap={subjectMap} toggleTask={toggleTask} updateTask={updateTask} setTab={setTab} setModal={setModal}/>} {tab==='Tasks'&&<Tasks tasks={visibleTasks} subjectMap={subjectMap} toggleTask={toggleTask} deleteTask={deleteTask} setModal={setModal} filter={filter} setFilter={setFilter}/>} {tab==='Subjects'&&(selectedSubject?<SubjectDetail subject={subjects.find(s=>s.id===selectedSubject)} tasks={tasks} setTasks={setTasks} subjects={subjects} setSubjects={setSubjects} setSelectedSubject={setSelectedSubject} setModal={setModal} cloudReady={cloudReady} user={user} deleteTask={deleteTask} deleteSubject={deleteSubject} onEditSubject={setSubjectEdit} toggleTask={toggleTask}/>:<Subjects subjects={subjects} tasks={tasks} setModal={setModal} onSelect={setSelectedSubject}/>)} {tab==='Calendar'&&<Calendar tasks={tasks.filter(t=>!t.timetable_cancelled)} subjectMap={subjectMap} setModal={setModal}/>} {tab==='Timetable'&&<Timetable tasks={tasks} onImport={()=>setTimetableModal(true)} onCancel={cancelClass} onEdit={t=>setModal({type:'task',task:t})} onEditSeries={t=>setTimetableSeriesEdit(t)} onDeleteSeries={deleteTimetableGroup}/>} {tab==='Focus'&&<Focus timer={timer} running={running} setRunning={setRunning} setTimer={setTimer} onLogSession={()=>setSessionModal(true)} focusMode={focusMode} setFocusMode={setFocusMode} pomodoros={pomodoros} setPomodoros={setPomodoros} customMinutes={customMinutes} setCustomMinutes={setCustomMinutes}/>}  {tab==='Settings'&&<SettingsPage theme={theme} setTheme={setTheme} user={user} login={login} logout={logout} onOpen={setSettingsPanel}/>} {settingsPanel&&<SettingsDetail type={settingsPanel} theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} user={user} login={login} logout={logout} onFocusLengthChange={m=>{setRunning(false);setFocusMode('custom');setCustomMinutes(m);setTimer(m*60)}} onClearLocalData={()=>{if(!window.confirm('Clear all local tasks, subjects, and sessions? This cannot be undone.'))return;localStorage.removeItem('orbit_subjects');localStorage.removeItem('orbit_tasks');localStorage.removeItem('orbit_sessions');setSubjects([]);setTasks([]);setSessions([]);setSelectedSubject(null);}} onClose={()=>setSettingsPanel(null)}/>} </main>{(modal==='task'||(modal?.type==='task'))&&<TaskModal subjects={subjects} initialDate={modal?.dueDate||''} initialTask={modal?.task||null} onClose={()=>setModal(null)} onSave={saveTask}/>} {modal==='subject'&&<SubjectModal onClose={()=>setModal(null)} onSave={saveSubject}/>} {subjectEdit&&<SubjectEditModal subject={subjectEdit} onClose={()=>setSubjectEdit(null)} onSave={v=>updateSubject(subjectEdit,v)}/>} {sessionModal&&<SessionModal subjects={subjects} defaultMinutes={Math.max(1,Math.round(timer/60))} onClose={()=>setSessionModal(false)} onSave={logSession}/>} {authModal&&<AuthModal cloudReady={cloudReady} onClose={()=>setAuthModal(false)} onGoogle={loginGoogle}/>} {timetableModal&&<TimetableImportModal onClose={()=>setTimetableModal(false)} onImport={importTimetable}/>} {timetableSeriesEdit&&<TimetableSeriesEditModal task={timetableSeriesEdit} onClose={()=>setTimetableSeriesEdit(null)} onSave={saveTimetableSeries}/>}</div>
+ return <div className={'app density-'+density.toLowerCase()}><aside className={(mobile?'side open':'side')+(sidebarCollapsed?' collapsed':'')}><div className="brand"><div className="logo">✦</div><div className="brandCopy"><b>ORBIT Tracker</b><small>plan, organize, and get things done</small></div><button className="iconbtn close" onClick={()=>setMobile(false)} aria-label="Close sidebar"><X size={18}/></button></div><nav>{[['Dashboard',LayoutDashboard],['Tasks',CheckSquare],['Subjects',BookOpen],['Calendar',CalendarDays],['Timetable',CalendarClock],['Focus',Timer]].map(([n,I])=><button className={tab===n?'nav active':'nav'} onClick={()=>{setTab(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span></button>)}<button className={tab==='Settings'?'nav active':'nav'} onClick={()=>{setTab('Settings');setMobile(false)}}><Settings size={18}/><span>Settings</span></button></nav><div className="sideBottom"><div className="quoteCard"><div className="quoteMark">“</div><p>Small steps, every day.</p><small>Progress is built one task at a time.</small><div className="onlineStatus"><span className="dot onlineDot"/><span>Online</span></div></div></div></aside><main><header><button className="iconbtn menu" onClick={()=>{if(window.innerWidth<=800){setMobile(true)}else{setSidebarCollapsed(v=>{const next=!v;localStorage.setItem('orbit_sidebar_collapsed',next?'1':'0');return next})}}} aria-label={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"} title={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"}><Menu/></button><div className="crumb">{tab}<span> / </span><b>{tab==='Dashboard'?'Today':'Workspace'}</b></div><div className="headActions"><div className={'search '+(searchTerm?'searchActive':'')}><Search size={17}/><input value={search} onFocus={()=>searchTerm&&setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} onKeyDown={e=>{if(e.key==='Enter'&&searchResults[0])openSearchResult(searchResults[0]);if(e.key==='Escape'){clearSearch();setSearchOpen(false)}}} placeholder="Search tasks, notes, subjects..." aria-label="Search tasks, notes, and subjects"/><button type="button" className="searchClear" onClick={()=>{clearSearch();setSearchOpen(false)}} aria-label="Clear search" title="Clear search">{searchTerm?<X size={14}/>:null}</button>{searchTerm&&searchOpen&&<div className="searchResults" role="listbox" aria-label="Search results">{searchResults.length?searchResults.map(result=>{const Icon=result.icon;return <button type="button" className="searchResult" key={result.type+'-'+result.id} onClick={()=>openSearchResult(result)}><span className="searchResultIcon"><Icon size={15}/></span><span className="searchResultText"><b>{result.title}</b><small>{result.meta}</small></span><ArrowUpRight size={14}/></button>}):<div className="searchNoResults"><Search size={16}/><span>No matching tasks or subjects</span></div>}</div>}</div>{user?<div className="profile"><button onClick={()=>setProfileOpen(!profileOpen)} className="avatar">{(user.user_metadata?.full_name||user.email||user.phone||'U')[0].toUpperCase()}</button>{profileOpen&&<div className="profileMenu"><b>{user.user_metadata?.full_name||'User'}</b><small>{user.email||user.phone}</small><button onClick={logout}><LogOut size={15}/> Sign out</button></div>}</div>:<button className="google" onClick={login}>Sign in</button>}</div></header>{tab==='Dashboard'&&<Dashboard progress={progress} dueToday={dueToday} hours={hours} tasks={tasks} subjects={subjects} subjectMap={subjectMap} toggleTask={toggleTask} updateTask={updateTask} setTab={setTab} setModal={setModal}/>} {tab==='Tasks'&&<Tasks tasks={visibleTasks} subjectMap={subjectMap} toggleTask={toggleTask} deleteTask={deleteTask} setModal={setModal} filter={filter} setFilter={setFilter}/>} {tab==='Subjects'&&(selectedSubject?<SubjectDetail subject={subjects.find(s=>s.id===selectedSubject)} tasks={tasks} setTasks={setTasks} subjects={subjects} setSubjects={setSubjects} setSelectedSubject={setSelectedSubject} setModal={setModal} cloudReady={cloudReady} user={user} deleteTask={deleteTask} deleteSubject={deleteSubject} onEditSubject={setSubjectEdit} toggleTask={toggleTask}/>:<Subjects subjects={subjects} tasks={tasks} setModal={setModal} onSelect={setSelectedSubject}/>)} {tab==='Calendar'&&<Calendar tasks={tasks.filter(t=>!t.timetable_cancelled)} subjectMap={subjectMap} setModal={setModal}/>} {tab==='Timetable'&&<Timetable tasks={tasks} onImport={()=>setTimetableModal(true)} onCancel={cancelClass} onEdit={t=>setModal({type:'task',task:t})} onEditSeries={t=>setTimetableSeriesEdit(t)} onDeleteSeries={deleteTimetableGroup}/>} {tab==='Focus'&&<Focus timer={timer} running={running} setRunning={setRunning} setTimer={setTimer} onLogSession={()=>setSessionModal(true)} focusMode={focusMode} setFocusMode={setFocusMode} pomodoros={pomodoros} setPomodoros={setPomodoros} customMinutes={customMinutes} setCustomMinutes={setCustomMinutes}/>}  {tab==='Settings'&&<SettingsPage theme={theme} setTheme={setTheme} user={user} login={login} logout={logout} onOpen={setSettingsPanel}/>} {settingsPanel&&<SettingsDetail type={settingsPanel} theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} user={user} googleProviderToken={googleProviderToken} login={login} logout={logout} onFocusLengthChange={m=>{setRunning(false);setFocusMode('custom');setCustomMinutes(m);setTimer(m*60)}} onClearLocalData={()=>{if(!window.confirm('Clear all local tasks, subjects, and sessions? This cannot be undone.'))return;localStorage.removeItem('orbit_subjects');localStorage.removeItem('orbit_tasks');localStorage.removeItem('orbit_sessions');setSubjects([]);setTasks([]);setSessions([]);setSelectedSubject(null);}} onClose={()=>setSettingsPanel(null)}/>} </main>{(modal==='task'||(modal?.type==='task'))&&<TaskModal subjects={subjects} initialDate={modal?.dueDate||''} initialTask={modal?.task||null} onClose={()=>setModal(null)} onSave={saveTask}/>} {modal==='subject'&&<SubjectModal onClose={()=>setModal(null)} onSave={saveSubject}/>} {subjectEdit&&<SubjectEditModal subject={subjectEdit} onClose={()=>setSubjectEdit(null)} onSave={v=>updateSubject(subjectEdit,v)}/>} {sessionModal&&<SessionModal subjects={subjects} defaultMinutes={Math.max(1,Math.round(timer/60))} onClose={()=>setSessionModal(false)} onSave={logSession}/>} {authModal&&<AuthModal cloudReady={cloudReady} onClose={()=>setAuthModal(false)} onGoogle={loginGoogle}/>} {timetableModal&&<TimetableImportModal onClose={()=>setTimetableModal(false)} onImport={importTimetable}/>} {timetableSeriesEdit&&<TimetableSeriesEditModal task={timetableSeriesEdit} onClose={()=>setTimetableSeriesEdit(null)} onSave={saveTimetableSeries}/>}</div>
 }
 function Dropdown({value,onChange,options,ariaLabel='Select option',className='',optionLabels={},onDeleteOption}){
  const [open,setOpen]=useState(false); const ref=useRef(null);
@@ -545,7 +588,7 @@ function SettingsPage({theme,setTheme,user,login,logout,onOpen}){
  </section>
 }
 
-function SettingsDetail({type,theme,setTheme,density,setDensity,user,login,logout,onClose,onFocusLengthChange,onClearLocalData}){
+function SettingsDetail({type,theme,setTheme,density,setDensity,user,googleProviderToken,login,logout,onClose,onFocusLengthChange,onClearLocalData}){
  const [notifications,setNotifications]=useState(()=>localStorage.getItem('orbit_notifications')!=='off');
  const [sound,setSound]=useState(()=>localStorage.getItem('orbit_focus_sound')!=='off');
  const [focusLength,setFocusLength]=useState(()=>Number(localStorage.getItem('orbit_default_focus')||25));

@@ -1,3 +1,5 @@
+# ORBIT Tracker
+
 # ◉ ORBIT Tracker
 
 > A modern productivity workspace for tasks, projects, schedules, focus sessions, and real-world routines.
@@ -225,3 +227,11 @@ This project is currently intended for personal and educational use. Add an open
 **Plan. Focus. Track. Repeat.**
 
 Built with React, Vite, Supabase, Google Calendar, and a little obsession with clean interfaces.
+
+
+## Recent timetable improvements
+
+- Delete an entire recurring class series at once.
+- Linked Google Calendar events are removed when a task/class occurrence or class series is deleted.
+- Timetable Calendar syncing runs in small parallel batches so large imports remain responsive.
+- Existing tasks are synced without blocking the main timetable UI.
