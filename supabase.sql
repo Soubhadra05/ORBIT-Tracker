@@ -75,3 +75,9 @@ create policy "sessions own" on public.study_sessions
 -- Task scheduling range (safe to run on an existing project)
 alter table public.tasks add column if not exists start_date date;
 alter table public.tasks add column if not exists end_date date;
+alter table public.tasks add column if not exists timetable_source boolean default false;
+alter table public.tasks add column if not exists timetable_weekday integer;
+alter table public.tasks add column if not exists timetable_room text;
+alter table public.tasks add column if not exists timetable_cancelled boolean default false;
+alter table public.tasks add column if not exists timetable_key text;
+NOTIFY pgrst, 'reload schema';

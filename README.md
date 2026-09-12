@@ -1,106 +1,227 @@
-# ORBIT Tracker
+# ◉ ORBIT Tracker
 
-A responsive React/Vite productivity workspace with a calm, Vercel-inspired black UI and Geist typography. It is intentionally neutral: use it for work, learning, personal goals, projects, or anything else.
+> A modern productivity workspace for tasks, projects, schedules, focus sessions, and real-world routines.
 
-## Included
+ORBIT Tracker is a responsive React/Vite productivity application designed to keep planning simple and calm. It is intentionally neutral: use it for school, college, work, projects, personal goals, or anything else you want to organize.
 
-- Vercel-inspired black theme with Geist Sans typography and circular ORBIT logo
-- Responsive dashboard with clickable progress, time, due-today and momentum cards
-- Task creation, search, status/priority filtering, completion state, inline editing and deletion
-- Tasks can be created with only a task name; subject, dates, times, minutes and description are optional
-- Completed tasks automatically move below active tasks and receive a strike-through
-- Subjects/projects with descriptions, progress tracking and per-subject task views
-- Per-subject PDF notes/resources stored locally in IndexedDB
-- Calendar with Today, 3 Days, Month and Year views; dates are selectable and can create tasks
-- Focus timer with 1/2/3 Pomodoro presets, custom duration, completion sound and manual session logging
-- Settings for theme, density, notifications, focus preferences, account and privacy/sync
-- Local demo mode works immediately without a backend
-- Google login + Supabase cloud sync + Google Calendar event sync
-- Custom subject categories with local persistence; cloud schema accepts any category
-- Task scheduling with optional start date, end date, start time and end time
-- Automatic Minutes calculation when a complete start/end time range is provided
-- Smooth, compact time-selection dropdown with 15-minute intervals
-- Tasks can span midnight, such as 11:00 PM to 1:00 AM the next day
-- Deleting a task removes its linked Google Calendar event
+## ✨ Features
 
-## Run locally
+### 📊 Dashboard
+- Task progress and completion statistics
+- Due-today overview
+- Time logged and productivity momentum
+- Quick navigation to tasks, projects, calendar, and focus
 
-1. Install Node.js 18+.
-2. Run `npm install`.
-3. Run `npm run dev`.
-4. Optional cloud sync: copy `.env.example` to `.env`, create a Supabase project, run `supabase.sql`, enable Google authentication, and add your Supabase URL and publishable key.
+### ✅ Tasks
+- Create a task with only a name — every other field is optional
+- Subjects/projects, priorities, descriptions, tags, and minutes
+- Start date, end date, start time, and end time
+- Automatic duration calculation from a complete date/time range
+- Cross-midnight scheduling, e.g. 11:00 PM → 1:00 AM
+- Search, filtering, inline editing, completion, and deletion
+- Google Calendar synchronization
 
-## Production build
+### 🗓️ Timetable Import
+Upload a class, school, or college timetable and ORBIT can turn it into scheduled class occurrences.
 
-Run `npm run build` and deploy the generated `dist` folder to Vercel or another Vite-compatible static host. On Vercel, the framework is Vite and the build command is `npm run build`; the output directory is `dist`.
+Supported input:
+- PNG
+- JPG/JPEG
+- WEBP
+- CSV
 
-If Supabase is configured in production, add `VITE_PUBLIC_SUPABASE_URL` and `VITE_PUBLIC_SUPABASE_PUBLISHABLE_KEY` as Vercel environment variables.
+For images, ORBIT uses browser-side OCR to detect weekday, time range, and class names. Detected rows are shown for review before they are added. CSV is the most reliable option for structured timetables.
 
-## Google Calendar sync
+When imported, recurring classes are generated for the selected term range. Each occurrence can be managed independently.
 
-ORBIT signs users in with Google and stores their workspace rows in Supabase under the signed-in user's `auth.users` identity.
+### 🚫 Last-minute class cancellation
+If a class is cancelled, open Timetable and choose **Cancel class** for that specific occurrence.
 
-Tasks with only a deadline are mirrored to the user's primary Google Calendar as all-day events.
+ORBIT will:
+- Remove the occurrence from the ORBIT calendar
+- Remove its linked Google Calendar event
+- Keep the cancellation recorded
+- Leave future recurring occurrences untouched
+- Allow the occurrence to be restored later
 
-Tasks with a complete start date/time and end date/time are mirrored as timed Google Calendar events.
+### 📅 Calendar
+- Today, 3 Days, Month, and Year views
+- Scheduled tasks and timetable classes
+- Timed and all-day events
+- Cross-midnight event support
+- Date selection and quick task creation
 
-Enable the Google Calendar API in Google Cloud, add the `https://www.googleapis.com/auth/calendar.events` scope to the OAuth consent screen, add required test users while the OAuth app is in Testing, and sign out/sign in again for users who previously authenticated before Calendar sync was added.
+### 📚 Subjects & Projects
+- Custom subjects/projects
+- Descriptions and target hours
+- Progress tracking
+- Custom categories and accent colors
+- Per-subject task views
+- PDF notes/resources stored locally in IndexedDB
 
-## Google Calendar troubleshooting
+### 🎯 Focus
+- 1, 2, or 3 Pomodoro presets
+- Custom focus duration
+- Completion sound
+- Manual session logging
+- Time tracking by subject/project
 
-- Sign out and sign in with Google again after enabling Calendar scopes.
-- In Settings → Privacy & sync, Google Calendar should say Connected.
-- Create a task with a deadline. It should appear on the primary Google Calendar.
-- Create a task with a complete start/end date and time range to create a timed Calendar event.
-- If the task was created before Calendar permission was connected, signing in again automatically attempts to sync existing tasks with deadlines.
-- If Calendar access expires, sign out and sign in with Google again to reconnect it.
+### 🔍 Global Search
+Search tasks, notes, tags, subjects, codes, categories, and resources from the main header.
 
-## Task time scheduling
+### ⚙️ Settings
+- Dark, light, and system themes
+- Compact, comfortable, and spacious density
+- Notification and focus sound preferences
+- Privacy and sync controls
+- Google account management
 
-Tasks may optionally include:
+## 🛠️ Tech Stack
 
-- Start date
-- End date
-- Start time
-- End time
-- Minutes
+- **Frontend:** React 18 + Vite
+- **UI:** CSS + Geist Sans + Lucide React
+- **Authentication:** Supabase Auth + Google OAuth
+- **Database:** Supabase PostgreSQL + Row Level Security
+- **Calendar:** Google Calendar API
+- **Local storage:** localStorage + IndexedDB
+- **OCR:** Tesseract.js loaded client-side for timetable image recognition
+- **Deployment:** Vercel
 
-When both start and end date/time values are supplied, ORBIT automatically calculates Minutes from the difference between them.
+## 🚀 Getting Started
 
-For example:
+### Prerequisites
 
-`15 Sep, 11:00 PM → 16 Sep, 1:00 AM`
+- Node.js 18+
+- npm
+- Git
 
-automatically becomes:
+### Install
 
-`120 minutes`
+```bash
+git clone https://github.com/Soubhadra05/ORBIT-Tracker.git
+cd ORBIT-Tracker
+npm install
+npm run dev
+```
 
-Tasks can therefore span midnight correctly.
+### Production build
 
-The time picker uses a compact 15-minute interval dropdown rather than a large clock interface.
+```bash
+npm run build
+npm run preview
+```
 
-If a task has a deadline but no complete time range, the Google Calendar event remains an all-day event.
+The Vite production output is generated in `dist/`.
 
-Deleting a task removes its linked Google Calendar event before the task is deleted.
+## ☁️ Supabase Setup
 
-## Existing Supabase projects
+ORBIT can run in local/demo mode without a backend. Cloud sync and Google authentication require Supabase.
 
-Re-run `supabase.sql` or apply the required `ALTER TABLE` statements so existing `tasks` tables gain the scheduling columns:
+Create `.env` from `.env.example`:
 
-```sql
-ALTER TABLE public.tasks
-ADD COLUMN IF NOT EXISTS start_date date;
+```env
+VITE_PUBLIC_SUPABASE_URL=your_supabase_project_url
+VITE_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+```
 
-ALTER TABLE public.tasks
-ADD COLUMN IF NOT EXISTS end_date date;
+Then run `supabase.sql` in the Supabase SQL Editor.
 
-ALTER TABLE public.tasks
-ADD COLUMN IF NOT EXISTS start_time text;
+The schema includes:
+- `subjects`
+- `tasks`
+- `study_sessions`
 
-ALTER TABLE public.tasks
-ADD COLUMN IF NOT EXISTS end_time text;
+Task scheduling and timetable metadata are stored in the `tasks` table. Row Level Security restricts cloud rows to their authenticated owner.
 
-ALTER TABLE public.tasks
-ADD COLUMN IF NOT EXISTS google_event_id text;
+## 🔑 Google Login & Calendar
 
-NOTIFY pgrst, 'reload schema';
+Google OAuth is handled through Supabase. Google Calendar synchronization uses the `calendar.events` scope.
+
+After changing Google OAuth scopes, users should sign out and sign in again so the new Calendar permission can be granted.
+
+Tasks with only a date become all-day Calendar events. Tasks with a complete start/end date and time range become timed Calendar events.
+
+## 🗓️ Timetable CSV Format
+
+For the most accurate timetable import, use a CSV with these columns:
+
+```csv
+Day,Start Time,End Time,Class,Room
+Monday,09:00,10:00,Mathematics,Room 201
+Monday,10:15,11:15,Physics,Lab 2
+Tuesday,11:00,12:00,Computer Science,Room 305
+```
+
+The importer lets you review and edit detected rows before generating recurring occurrences.
+
+## 🔒 Privacy & Security
+
+Core local functionality can be used without an account. Timetable image OCR runs in the browser; the application does not need to upload the timetable image to ORBIT's backend for OCR.
+
+Do not commit `.env`, Google OAuth client secrets, or other private credentials. Only browser-safe public configuration belongs in the frontend environment.
+
+## 📁 Project Structure
+
+```text
+ORBIT-Tracker/
+├── public/
+│   └── orbit-logo.png
+├── src/
+│   ├── main.jsx
+│   ├── styles.css
+│   └── supabase.js
+├── index.html
+├── package.json
+├── supabase.sql
+├── .env.example
+└── README.md
+```
+
+## 🔄 Development Workflow
+
+```bash
+git pull origin main
+
+# make changes
+git add .
+git commit -m "Describe your changes"
+git push origin main
+
+# deploy
+npx vercel --prod
+```
+
+## 🧪 Timetable Test Checklist
+
+- [ ] Upload a timetable image
+- [ ] OCR detects classes
+- [ ] Review/edit detected rows
+- [ ] Select term start and end dates
+- [ ] Import recurring classes
+- [ ] Verify classes in Timetable
+- [ ] Verify classes in Calendar
+- [ ] Verify timed Google Calendar events
+- [ ] Cancel one class occurrence
+- [ ] Verify its Google Calendar event is removed
+- [ ] Verify future occurrences remain
+- [ ] Restore a cancelled occurrence
+
+## 🤝 Contributing
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make and test your changes.
+4. Commit and push your branch.
+5. Open a Pull Request.
+
+## 📜 License
+
+This project is currently intended for personal and educational use. Add an open-source license if you plan to distribute the project under specific terms.
+
+---
+
+### 🌌 ORBIT
+
+**Plan. Focus. Track. Repeat.**
+
+Built with React, Vite, Supabase, Google Calendar, and a little obsession with clean interfaces.

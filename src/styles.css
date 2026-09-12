@@ -2120,3 +2120,206 @@ main>.page,
 .page,.selectedDayPanel,.focusCard,.tablePanel,.subjectTaskPanel,.pdfPanel{animation-duration:calc(.42s * var(--orbit-motion));}
 .taskRow,.subjectCard,.stat,.panel,.settingRow,.nav,.iconbtn,.primary,.secondary,.google,.dropdownTrigger,.dateFieldButton,.timeFieldButton{transition-duration:.42s!important}
 @media(prefers-reduced-motion:reduce){:root{--orbit-motion:1}.taskRow,.subjectCard,.stat,.panel,.settingRow,.nav,.iconbtn,.primary,.secondary,.google,.dropdownTrigger,.dateFieldButton,.timeFieldButton{transition-duration:.01ms!important}}
+
+/* =========================================================
+   ORBIT Timetable import + class cancellation
+   ========================================================= */
+.timetableHero{display:flex;justify-content:space-between;gap:24px;align-items:center;padding:22px;border:1px solid var(--line);background:linear-gradient(135deg,var(--panel),var(--panel2));border-radius:18px;margin-bottom:16px;box-shadow:0 18px 45px var(--shadow)}
+.timetableHero h2{margin:6px 0 4px;font:650 25px "Geist Sans";letter-spacing:-.5px}.timetableHero p{margin:0;color:var(--muted);font-size:11px;line-height:1.6}.timetableStats{display:flex;gap:10px;flex:none}.timetableStats div{min-width:92px;padding:12px 14px;border:1px solid var(--line);border-radius:13px;background:var(--panel2);text-align:center}.timetableStats strong{display:block;font:700 22px "Geist Sans"}.timetableStats span{display:block;color:var(--muted);font-size:9px;margin-top:3px;text-transform:uppercase;letter-spacing:.8px}
+.timetableGroups{display:grid;gap:12px}.timetableDay{border:1px solid var(--line);background:var(--panel);border-radius:16px;overflow:hidden}.timetableDayHead{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line);background:var(--panel2)}.timetableDayHead div{display:flex;align-items:center;gap:10px}.timetableDayHead b{font-size:12px}.timetableDayHead>span{font-size:9px;color:var(--muted)}.timetableList{display:grid}.timetableClass{display:grid;grid-template-columns:88px 8px minmax(0,1fr) auto;align-items:center;gap:13px;padding:13px 16px;border-bottom:1px solid var(--line);transition:background .35s var(--ease),transform .35s var(--ease)}.timetableClass:last-child{border-bottom:0}.timetableClass:hover{background:var(--panel2)}.classTime b,.classTime span{display:block}.classTime b{font-size:11px}.classTime span{font-size:9px;color:var(--muted);margin-top:3px}.classLine{width:3px;height:34px;border-radius:99px;background:linear-gradient(180deg,#8b5cf6,#22d3ee)}.classInfo b{display:block;font-size:12px}.classInfo small{display:block;color:var(--muted);font-size:9px;margin-top:4px}.cancelClassBtn{padding:8px 10px;font-size:9px}.timetableEmpty{display:flex;align-items:center;gap:14px;padding:28px}.timetableEmpty>svg{color:#a78bfa;flex:none}.timetableEmpty div{flex:1}.timetableEmpty b{font-size:13px}.timetableEmpty p{margin:4px 0 0;color:var(--muted);font-size:10px;line-height:1.5}.cancelledClasses{margin-top:16px}.cancelledClass{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.cancelledClass:first-of-type{border-top:0}.cancelledClass b,.cancelledClass span{display:block}.cancelledClass b{font-size:11px;text-decoration:line-through;opacity:.65}.cancelledClass span{font-size:9px;color:var(--muted);margin-top:4px}
+.timetableUpload{margin-bottom:14px}.uploadDrop{min-height:92px;border:1px dashed #4a4a4a;border-radius:14px;background:linear-gradient(135deg,var(--panel2),transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;color:var(--muted);transition:border-color .35s var(--ease),background .35s var(--ease),transform .35s var(--ease)}.uploadDrop:hover{border-color:#8b5cf6aa;background:rgba(139,92,246,.06);transform:translateY(-1px)}.uploadDrop svg{color:#a78bfa}.uploadDrop b{font-size:12px;color:var(--text)}.uploadDrop span{font-size:9px}.termGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px}.termGrid label{display:flex;flex-direction:column;gap:6px;font-size:10px;color:var(--muted);font-weight:600}.termGrid input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--text);font:500 11px "Geist Sans";outline:none}.termGrid input:focus{border-color:#8b5cf666;box-shadow:0 0 0 3px #8b5cf612}.importMessage{padding:10px 12px;border:1px solid #8b5cf633;background:#8b5cf60b;color:var(--muted);border-radius:10px;font-size:10px;margin-bottom:12px}.importHeader{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px}.importHeader>div{display:flex;align-items:center;gap:8px}.importHeader>div>b{font-size:11px}.importRows{display:grid;gap:7px;max-height:260px;overflow:auto;padding-right:3px}.importRow{display:grid;grid-template-columns:1fr 96px 96px minmax(120px,1.4fr) minmax(100px,1fr) 34px;gap:6px;align-items:center}.importRow select,.importRow input{width:100%;min-width:0;height:38px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:9px;padding:0 9px;font:500 10px "Geist Sans";outline:none}.importRow select:focus,.importRow input:focus{border-color:#8b5cf666;box-shadow:0 0 0 3px #8b5cf612}.importEmpty{padding:18px;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:10px;text-align:center}.csvHint{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}.csvHint b{font-size:10px}.csvHint code{display:block;margin-top:5px;font-size:9px;color:#a78bfa;white-space:nowrap;overflow:auto}.csvHint small{display:block;color:var(--muted);font-size:8px;margin-top:4px}.ocrDetails{margin-top:8px;color:var(--muted);font-size:9px}.ocrDetails summary{cursor:pointer}.ocrDetails textarea{width:100%;min-height:100px;margin-top:7px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:8px;font:400 10px monospace}
+@media(max-width:800px){.timetableHero{align-items:flex-start;flex-direction:column}.timetableStats{width:100%}.timetableStats div{flex:1}.timetableClass{grid-template-columns:70px 6px minmax(0,1fr);gap:10px}.cancelClassBtn{grid-column:3;justify-self:start}.termGrid{grid-template-columns:1fr}.importRow{grid-template-columns:1fr 1fr 1fr 34px}.importRow input:nth-of-type(3),.importRow input:nth-of-type(4){grid-column:span 2}.importRow select{grid-column:span 2}.importRow button{grid-column:4;grid-row:1}.timetableEmpty{align-items:flex-start;flex-wrap:wrap}}
+@media(max-width:520px){.timetableDayHead div{gap:7px}.timetableDayHead b{font-size:11px}.timetableClass{grid-template-columns:62px 5px minmax(0,1fr)}.timetableHero h2{font-size:21px}.importRow{grid-template-columns:1fr 1fr 34px}.importRow select{grid-column:span 2}.importRow input:nth-of-type(3),.importRow input:nth-of-type(4){grid-column:span 2}.importRow button{grid-column:3;grid-row:1}.cancelledClass{align-items:flex-start;flex-direction:column}}
+
+/* Timetable import — compact, consistent, and responsive */
+.timetableImportModal{width:min(920px,100%);padding:24px}
+.timetableImportModal .modalIntro{max-width:760px;margin-bottom:20px}
+.timetableUpload{margin-bottom:18px}
+.uploadDrop{min-height:104px;border:1px dashed #3a3a3a;border-radius:16px;background:linear-gradient(135deg,#0d0d0d,#090909);display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:14px;padding:16px 18px;cursor:pointer;color:var(--muted);transition:border-color .32s var(--ease),background .32s var(--ease),transform .32s var(--ease),box-shadow .32s var(--ease)}
+.uploadDrop:hover{border-color:#777;background:linear-gradient(135deg,#111,#0a0a0a);transform:translateY(-1px);box-shadow:0 14px 32px rgba(0,0,0,.28)}
+.uploadIcon{width:44px;height:44px;border-radius:13px;border:1px solid #333;background:#151515;color:#fff;display:grid;place-items:center;flex:none;transition:transform .32s var(--ease),background .32s var(--ease),border-color .32s var(--ease)}
+.uploadDrop:hover .uploadIcon{transform:translateY(-2px);background:#1c1c1c;border-color:#555}
+.uploadCopy{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;text-align:left}
+.uploadCopy b{font-size:13px;color:var(--text);font-weight:650}
+.uploadCopy small{font-size:10px;color:var(--muted)}
+.uploadAction{border:1px solid #333;background:#111;color:#ddd;border-radius:9px;padding:8px 11px;font-size:10px;font-weight:600;white-space:nowrap;transition:background .25s ease,border-color .25s ease}
+.uploadDrop:hover .uploadAction{background:#1a1a1a;border-color:#555;color:#fff}
+.termGrid{margin-bottom:18px}
+.termGrid label{gap:7px}
+.termGrid input{min-height:48px}
+.importHeader{margin:4px 0 10px}
+.addClassBtn{padding:9px 12px}
+.importRows{max-height:390px;padding:2px 4px 4px 0;gap:10px}
+.importRow{display:grid;grid-template-columns:105px 105px 105px minmax(150px,1.5fr) 110px;gap:8px;align-items:end;padding:12px;border:1px solid #242424;border-radius:14px;background:#0b0b0b;position:relative;transition:border-color .28s ease,background .28s ease,box-shadow .28s ease}
+.importRow:hover{border-color:#3a3a3a;background:#0e0e0e;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.importRowField{min-width:0}
+.importRowField>span{display:block;font-size:8px;letter-spacing:1.2px;color:#6f6f6f;font-weight:700;margin:0 0 5px 2px}
+.importRow select,.importRow input{height:42px;margin:0;border:1px solid #2b2b2b;background:#111;color:#eee;border-radius:10px;padding:0 10px;font:500 10px "Geist Sans";outline:none;width:100%;min-width:0}
+.importRow select:focus,.importRow input:focus{border-color:#666;box-shadow:0 0 0 3px rgba(255,255,255,.045)}
+.importRowDates{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:9px;border-top:1px solid #1f1f1f}
+.importRowDates .importRowField input{height:40px}
+.importDelete{position:absolute;right:10px;top:10px;width:32px;height:32px;padding:0;display:grid;place-items:center;border:1px solid #292929;background:#111;border-radius:9px}
+.importDelete:hover{background:#1b0f12;border-color:#59313a;color:#fb7185}
+.importRow .titleField{padding-right:36px}
+.importEmpty{display:flex;align-items:center;justify-content:center;gap:9px;min-height:74px}
+.csvHint{margin-top:12px;padding:12px 14px;border-radius:12px;background:#0b0b0b;border-color:#252525}
+.csvHint>div{display:flex;align-items:center;gap:8px}.csvHint>div span{font-size:9px;color:#666;border:1px solid #292929;border-radius:99px;padding:3px 7px}
+.csvHint code{margin-top:8px;font-size:9px;color:#b09cff}.csvHint small{font-size:8px}
+.importScheduleBtn{margin-top:14px;height:48px}
+
+:root[data-theme="light"] .uploadDrop{background:linear-gradient(135deg,#fff,#f7f8fb);border-color:#cfd5df}
+:root[data-theme="light"] .uploadDrop:hover{background:#fff;border-color:#aeb7c5;box-shadow:0 14px 32px rgba(17,24,39,.08)}
+:root[data-theme="light"] .uploadIcon{background:#f5f6f8;border-color:#dde2e9;color:#111}
+:root[data-theme="light"] .uploadAction{background:#fff;border-color:#d7dce5;color:#374151}
+:root[data-theme="light"] .importRow{background:#fbfcfe;border-color:#e1e5eb}
+:root[data-theme="light"] .importRow:hover{background:#fff;border-color:#cfd6e0;box-shadow:0 10px 24px rgba(17,24,39,.06)}
+:root[data-theme="light"] .importRow select,:root[data-theme="light"] .importRow input{background:#fff;border-color:#d6dce6;color:#111827}
+:root[data-theme="light"] .importRowDates{border-color:#e6e9ef}
+:root[data-theme="light"] .importDelete{background:#fff;border-color:#d9dee7}
+:root[data-theme="light"] .csvHint{background:#f8f9fb;border-color:#e2e6ed}
+
+@media(max-width:800px){
+ .timetableImportModal{padding:18px}
+ .importRow{grid-template-columns:1fr 1fr 1fr; padding-right:50px}
+ .importRow .titleField{grid-column:1 / -1;padding-right:0}
+ .importRow .roomField{grid-column:1 / -1}
+ .importRowDates{grid-column:1 / -1}
+}
+@media(max-width:520px){
+ .timetableImportModal{padding:15px}
+ .uploadDrop{min-height:96px;padding:14px;gap:11px}
+ .uploadIcon{width:40px;height:40px}
+ .uploadAction{display:none}
+ .importRow{grid-template-columns:1fr 1fr;padding:11px}
+ .importRow .dayField{grid-column:1 / -1}
+ .importRowDates{grid-template-columns:1fr}
+ .importRow .titleField,.importRow .roomField{grid-column:1 / -1}
+}
+
+/* Timetable import polish v4 */
+.timetableImportModal{width:min(980px,calc(100vw - 32px));max-height:min(92vh,920px);overflow-y:auto;padding:28px;border-radius:24px}
+.timetableImportModal .modalIntro{display:none}
+.timetableUpload{margin:0 0 20px}
+.uploadDrop{min-height:176px!important;width:100%;box-sizing:border-box;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:10px!important;padding:24px!important;border:1px dashed #414141!important;border-radius:20px!important;background:radial-gradient(circle at 50% 0%,rgba(139,92,246,.09),transparent 48%),linear-gradient(180deg,#101010,#0b0b0b)!important;transition:transform .42s var(--ease),border-color .42s var(--ease),background .42s var(--ease),box-shadow .42s var(--ease)!important}
+.uploadDrop:hover,.uploadDrop.isDragging{transform:translateY(-2px)!important;border-color:#9b7cff!important;background:radial-gradient(circle at 50% 0%,rgba(139,92,246,.15),transparent 52%),linear-gradient(180deg,#121212,#0b0b0b)!important;box-shadow:0 18px 45px rgba(0,0,0,.3),0 0 0 4px rgba(139,92,246,.06)!important}
+.uploadIcon{width:58px!important;height:58px!important;border-radius:17px!important;display:grid!important;place-items:center!important;border:1px solid #373737!important;background:#171717!important;color:#a78bfa!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important}
+.uploadDrop:hover .uploadIcon,.uploadDrop.isDragging .uploadIcon{transform:translateY(-2px) scale(1.03)!important;border-color:#5a4b85!important;background:#1b1824!important}
+.uploadCopy{display:flex!important;flex-direction:column!important;align-items:center!important;gap:4px!important;flex:none!important;text-align:center!important}
+.uploadCopy b{font-size:15px!important;letter-spacing:-.2px!important}
+.uploadCopy small{font-size:10px!important;color:var(--muted)!important}
+.uploadAction{margin-top:3px;border:1px solid #3a3a3a!important;background:#171717!important;color:#f1f1f1!important;border-radius:10px!important;padding:9px 14px!important;font-size:10px!important;font-weight:650!important}
+.uploadDrop:hover .uploadAction,.uploadDrop.isDragging .uploadAction{background:#202020!important;border-color:#555!important}
+.termGrid{gap:14px!important;margin-bottom:22px!important}
+.termGrid label{gap:7px!important;font-size:9px!important;letter-spacing:.65px!important;text-transform:uppercase!important}
+.termGrid input{height:48px!important;min-height:48px!important;border-radius:13px!important;font-size:12px!important;padding:0 13px!important}
+.importHeader{margin:0 0 12px!important;padding-top:2px!important}
+.importHeader>div{gap:10px!important}
+.importHeader>div>b{font-size:12px!important;color:var(--text)!important}
+.addClassBtn{border-radius:11px!important;padding:9px 12px!important}
+.importRows{gap:10px!important;max-height:390px!important;padding:2px!important}
+.importCard{border:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel));border-radius:18px;padding:15px;box-shadow:0 10px 30px rgba(0,0,0,.12);transition:border-color .42s var(--ease),transform .42s var(--ease),box-shadow .42s var(--ease)}
+.importCard:hover{border-color:#3c3c3c;transform:translateY(-1px);box-shadow:0 14px 36px rgba(0,0,0,.18)}
+.importCardTop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.importCardTitle{display:flex;align-items:center;gap:11px;min-width:0;flex:1}
+.classIndex{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#161616;border:1px solid #303030;color:#a78bfa;font-size:9px;font-weight:700;letter-spacing:.6px;flex:none}
+.classTitleInput,.classRoomInput{display:block;width:100%;border:0!important;outline:0!important;background:transparent!important;padding:0!important;box-shadow:none!important}
+.classTitleInput{font-size:13px!important;font-weight:650!important;color:var(--text)!important;margin-bottom:5px!important}
+.classRoomInput{font-size:10px!important;color:var(--muted)!important}
+.classTitleInput::placeholder,.classRoomInput::placeholder{color:#777}
+.importSlots{display:grid;gap:8px;padding:12px 0 9px}
+.importSlot{display:grid;grid-template-columns:minmax(145px,1.05fr) minmax(150px,1fr) minmax(150px,1fr) 34px;gap:8px;align-items:center}
+.importSlot .dropdown,.importSlot .timeField{min-width:0}
+.importSlot .dropdownTrigger,.importSlot .timeFieldButton{height:42px!important;min-height:42px!important;border-radius:11px!important}
+.importSlot .timeValue small{font-size:7px!important}
+.importSlot .timeValue span{font-size:10px!important}
+.importSlot .dropdownTrigger{font-size:10px!important}
+.subtleDelete{width:34px!important;height:34px!important;justify-self:end;opacity:.65}
+.subtleDelete:hover:not(:disabled){opacity:1}
+.subtleDelete:disabled{opacity:.2;cursor:not-allowed}
+.addDayBtn{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;background:transparent;color:var(--muted);font:600 10px "Geist Sans";padding:5px 3px;cursor:pointer;transition:color .35s var(--ease),transform .35s var(--ease)}
+.addDayBtn:hover{color:var(--text);transform:translateX(2px)}
+.importDates{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:9px;align-items:end;padding-top:12px;border-top:1px solid var(--line)}
+.importDates label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:8px;font-weight:650;letter-spacing:.65px;text-transform:uppercase}
+.importDates input{height:42px;box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--text);padding:0 11px;font:500 10px "Geist Sans";outline:none}
+.importDates input:focus{border-color:#8b5cf666;box-shadow:0 0 0 3px #8b5cf612}
+.dateArrow{align-self:center;text-align:center;color:#666;font-size:13px;padding-top:17px}
+.importEmpty{padding:26px!important;border-radius:16px!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center}
+.importEmpty span{font-size:10px!important}
+/* Hide the old instructional CSV copy; upload itself remains the clean primary action. */
+.csvHint{display:none!important}
+.importScheduleBtn{margin-top:18px!important;min-height:52px!important;border-radius:14px!important}
+.timetableActions{display:flex;align-items:center;gap:7px;justify-content:flex-end}
+.timetableActions .iconbtn{width:34px;height:34px}
+.cancelClassBtn{padding:8px 11px!important}
+.dropdown.timetableDayDropdown .dropdownTrigger{height:42px!important;min-height:42px!important;border-radius:11px!important}
+.dropdown.timetableDayDropdown .dropdownMenu{min-width:100%;max-height:240px;z-index:80}
+.dropdown.timetableDayDropdown .dropdownOption{height:38px;font-size:10px}
+
+:root[data-theme="light"] .uploadDrop{background:radial-gradient(circle at 50% 0%,rgba(124,92,246,.08),transparent 48%),linear-gradient(180deg,#fff,#f7f8fb)!important;border-color:#cfd5df!important}
+:root[data-theme="light"] .uploadDrop:hover,:root[data-theme="light"] .uploadDrop.isDragging{background:radial-gradient(circle at 50% 0%,rgba(124,92,246,.12),transparent 52%),#fff!important;border-color:#8d7bc5!important;box-shadow:0 18px 45px rgba(17,24,39,.09),0 0 0 4px rgba(124,92,246,.05)!important}
+:root[data-theme="light"] .uploadIcon{background:#f4f5f8!important;border-color:#d9dde5!important;color:#7657d8!important}
+:root[data-theme="light"] .uploadAction{background:#fff!important;border-color:#d7dce5!important;color:#1f2937!important}
+:root[data-theme="light"] .classIndex{background:#f5f6f8;border-color:#e0e3e8}
+
+@media(max-width:700px){
+ .timetableImportModal{width:calc(100vw - 20px);padding:18px;border-radius:20px}
+ .uploadDrop{min-height:150px!important;padding:18px!important}
+ .uploadIcon{width:52px!important;height:52px!important}
+ .termGrid{grid-template-columns:1fr!important}
+ .importSlot{grid-template-columns:1fr 1fr 34px}
+ .importSlot .slotDay{grid-column:span 2}
+ .importSlot .subtleDelete{grid-column:3;grid-row:1;align-self:end}
+ .importDates{grid-template-columns:1fr 1fr;gap:8px}
+ .dateArrow{display:none}
+}
+@media(max-width:460px){
+ .importSlot{grid-template-columns:1fr 34px}
+ .importSlot .slotDay{grid-column:1/-1}
+ .importSlot .timeField{grid-column:1}
+ .importSlot .timeField:nth-child(3){grid-column:1}
+ .importSlot .subtleDelete{grid-column:2;grid-row:2/4;align-self:center}
+ .classIndex{display:none}
+ .importCard{padding:12px}
+}
+
+
+/* Timetable v5 — cleaner class controls + recurring series editor */
+.importCardTitle{align-items:flex-start!important}
+.importCardTitle>div{min-width:0;display:grid;gap:6px;flex:1}
+.classTitleInput,.classRoomInput{height:auto!important;min-height:0!important;border:1px solid transparent!important;border-radius:9px!important;background:transparent!important;transition:background .32s var(--ease),border-color .32s var(--ease),padding .32s var(--ease)!important}
+.classTitleInput{font:600 14px/1.35 "Geist Sans"!important;letter-spacing:-.25px!important;padding:5px 8px!important}
+.classRoomInput{font:500 10px/1.35 "Geist Sans"!important;padding:3px 8px!important;color:var(--muted)!important}
+.classTitleInput:hover,.classRoomInput:hover{background:var(--panel2)!important;border-color:var(--line)!important}
+.classTitleInput:focus,.classRoomInput:focus{background:var(--panel2)!important;border-color:#8b5cf666!important;box-shadow:0 0 0 3px #8b5cf612!important}
+.classTitleInput::placeholder,.classRoomInput::placeholder{color:#707070!important;opacity:1}
+.importCardTop .dangerIcon{width:36px!important;height:36px!important;border-radius:10px!important;flex:none!important}
+.importSlot .timeFieldButton{font-size:11px!important}
+.cancelClassBtn{height:34px!important;min-height:34px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;padding:0 12px!important;border-radius:10px!important;font:600 10px "Geist Sans"!important;letter-spacing:-.05px!important;white-space:nowrap!important;transition:transform .36s var(--ease),border-color .36s var(--ease),background .36s var(--ease)!important}
+.cancelClassBtn svg{width:14px!important;height:14px!important;stroke-width:1.8!important}
+.cancelClassBtn:hover{transform:translateY(-1px)!important}
+.seriesEditIcon{width:34px!important;height:34px!important;border-radius:10px!important;color:var(--muted)!important}
+.seriesEditIcon:hover{color:var(--text)!important;border-color:#4b4b4b!important;background:var(--panel2)!important}
+.timetableActions{gap:6px!important}
+.timetableSeriesModal{width:min(620px,calc(100vw - 32px))!important;padding:26px!important;border-radius:22px!important}
+.seriesIntro{display:flex;align-items:flex-start;gap:12px;padding:14px 15px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(135deg,var(--panel2),var(--panel));margin-bottom:18px}
+.seriesIcon{width:34px;height:34px;display:grid;place-items:center;flex:none;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:#a78bfa}
+.seriesIntro b{display:block;font-size:12px;line-height:1.4;letter-spacing:-.1px}.seriesIntro p{margin:4px 0 0;color:var(--muted);font-size:10px;line-height:1.55}
+.seriesFields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.seriesFields label,.seriesTime{display:flex;flex-direction:column;gap:7px;min-width:0}
+.seriesFields label>span,.seriesTime>span{font-size:9px;font-weight:650;letter-spacing:.65px;text-transform:uppercase;color:var(--muted)}
+.seriesFields label input{height:46px;box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);padding:0 12px;font:500 11px "Geist Sans";outline:none;transition:border-color .36s var(--ease),box-shadow .36s var(--ease)}
+.seriesFields label input:focus{border-color:#8b5cf666;box-shadow:0 0 0 3px #8b5cf612}
+.seriesWide{grid-column:1/-1}
+.seriesTime{grid-column:1/-1}.seriesTime>div{display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;gap:8px}.seriesTimeArrow{text-align:center;color:var(--muted);font-size:13px}
+.seriesTime .timeField,.seriesTime .timeFieldButton{width:100%;min-width:0}.seriesTime .timeFieldButton{height:46px!important;min-height:46px!important;border-radius:12px!important}
+.seriesNote{display:flex;gap:9px;align-items:flex-start;margin-top:16px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--muted);font-size:9px;line-height:1.55}.seriesNote svg{flex:none;color:#a78bfa;margin-top:1px}
+.seriesActions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.seriesActions button{height:42px!important;min-height:42px!important;border-radius:11px!important;font-size:10px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;padding:0 14px!important}.seriesCancelBtn{min-width:86px}.seriesSaveBtn{min-width:170px}
+@media(max-width:620px){.timetableSeriesModal{padding:18px!important}.seriesFields{grid-template-columns:1fr}.seriesWide{grid-column:auto}.seriesTime{grid-column:auto}.seriesActions{display:grid;grid-template-columns:1fr 1.6fr}.seriesActions button{width:100%}}
+@media(max-width:760px){.timetableActions .seriesEditIcon{display:none}.cancelClassBtn span{display:none}.cancelClassBtn{width:34px!important;padding:0!important}}
+:root[data-theme="light"] .seriesIcon{background:#fff}.seriesIntro,.seriesNote{box-shadow:0 8px 25px rgba(0,0,0,.06)}
+
+/* Timetable v6 — delete an entire subject/series cleanly */
+.timetableActions .seriesDeleteIcon{width:34px!important;height:34px!important;border-radius:10px!important;color:var(--muted)!important}
+.timetableActions .seriesDeleteIcon:hover{color:#f87171!important;border-color:#5a3030!important;background:rgba(248,113,113,.07)!important}
+.timetableActions .cancelClassBtn{min-width:76px!important;height:34px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;border-radius:10px!important;font-size:9px!important}
+@media(max-width:760px){.timetableActions{flex-wrap:wrap}.timetableActions .seriesDeleteIcon{display:inline-flex!important}.timetableActions .cancelClassBtn{min-width:34px!important}.timetableActions .cancelClassBtn span{display:none!important}}

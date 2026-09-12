@@ -5,10 +5,11 @@ import '@fontsource/geist-sans/700.css';
 import React,{useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {supabase,cloudReady} from './supabase';
-import {LayoutDashboard,CheckSquare,BookOpen,CalendarDays,Timer,Plus,Search,ChevronDown,Trash2,Check,Clock3,Target,Flame,LogOut,Menu,X,ArrowUpRight,Play,Pause,RotateCcw,Settings,Pencil,Sun,Moon,Monitor,CircleUser,Palette,Bell,SlidersHorizontal,ShieldCheck,FileText,Upload,Download,ExternalLink,File,FilePlus2} from 'lucide-react';
+import {LayoutDashboard,CheckSquare,BookOpen,CalendarDays,CalendarClock,Timer,Plus,Search,ChevronDown,Trash2,Check,Clock3,Target,Flame,LogOut,Menu,X,ArrowUpRight,Play,Pause,RotateCcw,Settings,Pencil,Sun,Moon,Monitor,CircleUser,Palette,Bell,SlidersHorizontal,ShieldCheck,FileText,Upload,Download,ExternalLink,File,FilePlus2} from 'lucide-react';
 import './styles.css';
 
 const seedSubjects=[{id:'s1',name:'Work Project',code:'PRJ',category:'Work',color:'#8b5cf6',icon:'book-open',target_hours:30},{id:'s2',name:'Personal Growth',code:'LIFE',category:'Personal',color:'#06b6d4',icon:'database',target_hours:25},{id:'s3',name:'Learning',code:'LEARN',category:'Learning',color:'#f59e0b',icon:'network',target_hours:25},{id:'s4',name:'Home & Life',code:'LIFE',category:'Personal',color:'#ec4899',icon:'cpu',target_hours:18}];
+const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const seedTasks=[{id:'t1',title:'Review project notes',subject_id:'s1',due_date:'2026-09-11',priority:'High',status:'In Progress',estimated_minutes:60,tags:['review'],notes:''},{id:'t2',title:'Finish weekly plan',subject_id:'s2',due_date:'2026-09-12',priority:'Urgent',status:'Todo',estimated_minutes:45,tags:['planning'],notes:''},{id:'t3',title:'Read and summarize an article',subject_id:'s3',due_date:'2026-09-10',priority:'Medium',status:'Todo',estimated_minutes:30,tags:['learning'],notes:''}];
 function uid(){return crypto.randomUUID?.()||Math.random().toString(36).slice(2)}
 
@@ -84,6 +85,7 @@ async function deleteGoogleCalendarEvent(accessToken,eventId){
 }
 async function syncTaskToGoogleCalendar(accessToken,task,subjectName){
  if(!accessToken||!task)return task;
+ if(task.timetable_cancelled){if(task.google_event_id)await deleteGoogleCalendarEvent(accessToken,task.google_event_id).catch(error=>{if(error.status!==404)throw error});return {...task,google_event_id:null};}
  if(!task.due_date){
   if(task.google_event_id) await deleteGoogleCalendarEvent(accessToken,task.google_event_id).catch(error=>{if(error.status!==404)throw error});
   return task.google_event_id?{...task,google_event_id:null}:task;
@@ -96,9 +98,111 @@ async function syncTaskToGoogleCalendar(accessToken,task,subjectName){
  return event?.id?{...task,google_event_id:event.id}:task;
 }
 
+
+const TIMETABLE_WEEKS=16;
+function normalizeWeekday(value){const s=String(value||'').trim().toLowerCase();const map={sun:0,sunday:0,mon:1,monday:1,tue:2,tues:2,tuesday:2,wed:3,wednesday:3,thu:4,thur:4,thurs:4,thursday:4,fri:5,friday:5,sat:6,saturday:6};return Number.isInteger(map[s])?map[s]:null}
+function parseTimeValue(value){const s=String(value||'').trim().toUpperCase().replace(/\./g,'');const m=s.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/);if(!m)return null;let h=Number(m[1]),min=Number(m[2]||0),ap=m[3];if(min>59||h>23)return null;if(ap){if(h<1||h>12)return null;if(ap==='AM'&&h===12)h=0;if(ap==='PM'&&h!==12)h+=12}return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`}
+function parseTimeRange(text){const s=String(text||'').replace(/[–—−]/g,'-').replace(/\bto\b/ig,'-');const m=s.match(/(\d{1,2}(?::\d{2})?\s*(?:AM|PM)?)\s*-\s*(\d{1,2}(?::\d{2})?\s*(?:AM|PM)?)/i);if(!m)return null;let a=parseTimeValue(m[1]),b=parseTimeValue(m[2]);if(a&&b&&!/AM|PM/i.test(m[2])&&/AM|PM/i.test(m[1])){const suffix=/AM|PM/i.exec(m[1])?.[0];b=parseTimeValue(`${m[2]} ${suffix}`)}return a&&b?{start_time:a,end_time:b}:null}
+function nextOccurrenceDate(startDate,weekday){const d=fromDateKey(startDate);const delta=(weekday-d.getDay()+7)%7;d.setDate(d.getDate()+delta);return localDateKey(d)}
+function buildTimetableOccurrences(entry,startDate,endDate){const rangeStart=entry.start_date||startDate,rangeEnd=entry.end_date||endDate;const out=[];let d=fromDateKey(nextOccurrenceDate(rangeStart,entry.weekday));const last=fromDateKey(rangeEnd);let guard=0;while(d<=last&&guard<400){const date=localDateKey(d);let endDateKey=date;if(timeToMinutes(entry.end_time)<=timeToMinutes(entry.start_time))endDateKey=nextDateKey(date);out.push({date,endDate:endDateKey});d.setDate(d.getDate()+7);guard++}return out}
+function parseTimetableCsv(text){const rows=[];const lines=String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!lines.length)return rows;const split=(line)=>{const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){q=!q;continue}if(c===','&&!q){out.push(cur.trim());cur=''}else cur+=c}out.push(cur.trim());return out};const header=split(lines[0]).map(x=>x.toLowerCase().replace(/[^a-z]/g,''));const idx=(names)=>header.findIndex(h=>names.some(n=>h.includes(n)));const di=idx(['day','weekday']),si=idx(['starttime','start']),ei=idx(['endtime','end']),ci=idx(['class','subject','course','title','name']),ri=idx(['room','location']);for(const line of lines.slice(1)){const c=split(line),weekday=normalizeWeekday(c[di]);const range=si>=0&&ei>=0?{start_time:parseTimeValue(c[si]),end_time:parseTimeValue(c[ei])}:parseTimeRange(`${c[si]||''}-${c[ei]||''}`);const title=(ci>=0?c[ci]:'').trim();if(weekday==null||!range?.start_time||!range?.end_time||!title)continue;rows.push({weekday,start_time:range.start_time,end_time:range.end_time,title,room:ri>=0?c[ri]:'',source:'csv'})}return rows}
+function cleanOcrCellText(text){
+ return String(text||'').replace(/\s+/g,' ').replace(/[|]+/g,' ').replace(/\s+([),.\]])/g,'$1').replace(/([([\-])\s+/g,'$1').trim();
+}
+function parseRoomFromOcr(text){
+ const s=cleanOcrCellText(text); const m=s.match(/\b(MSB\s*[- ]?\d{2,4}|Room\s*[- ]?\w+|Rm\.?\s*[- ]?\w+)\b/i); return m?m[1].replace(/\s+/g,' ').trim():'';
+}
+function likelyClassText(text){
+ const s=cleanOcrCellText(text); if(s.length<4)return false;
+ if(/^(remedial|class|lab|room|year|no)$/i.test(s))return false;
+ if(/^(recess|r\s*e\s*c\s*e\s*s\s*s)$/i.test(s.replace(/\s+/g,'')))return false;
+ return /(?:\b[A-Z]{2,6}[- ]?[A-Z]{0,4}\s*[- ]?\d{3}[A-Z]?\b|\b(?:BSC|MC-CS|HSMC|ESC|PROJ)\s+\d{3}\b|\b(?:Mathematics|Physics|Chemistry|English|Project|Computer)\b)/i.test(s) || s.length>=10;
+}
+function parseTimetableOcr(text){
+ const rows=[]; const lines=String(text||'').split(/\r?\n/).map(x=>cleanOcrCellText(x)).filter(Boolean);
+ const dayRe=/\b(Sun(?:day)?|Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?)\b/i;
+ for(const line of lines){const dm=line.match(dayRe),range=parseTimeRange(line);if(!dm||!range)continue;let title=cleanOcrCellText(line.replace(dayRe,'').replace(/\d{1,2}(?::\d{2})?\s*(?:AM|PM)?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*(?:AM|PM)?/i,''));if(!likelyClassText(title))continue;rows.push({weekday:normalizeWeekday(dm[1]),start_time:range.start_time,end_time:range.end_time,title,room:'',source:'ocr'})}
+ return rows;
+}
+function detectDarkLines(gray,axis,threshold=120,minRatio=.78){
+ const vals=axis==='x'?[...Array(gray.width).keys()].map(x=>{let n=0;for(let y=0;y<gray.height;y+=2){if(gray.data[y*gray.width+x]<threshold)n++}return n/(gray.height/2)}):[...Array(gray.height).keys()].map(y=>{let n=0;for(let x=0;x<gray.width;x+=2){if(gray.data[y*gray.width+x]<threshold)n++}return n/(gray.width/2)});
+ const raw=[]; vals.forEach((v,i)=>{if(v>=minRatio)raw.push(i)}); const out=[]; for(const i of raw){if(!out.length||i-out[out.length-1]>2)out.push(i)} return out;
+}
+async function recognizeTimetableImage(file,T){
+ const bitmap=await createImageBitmap(file); const scale=Math.min(2.4,2400/bitmap.width); const canvas=document.createElement('canvas');canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.imageSmoothingEnabled=true;ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);if(bitmap.close)bitmap.close();
+ const src=ctx.getImageData(0,0,canvas.width,canvas.height); const gray=new Uint8ClampedArray(canvas.width*canvas.height); for(let i=0,j=0;i<src.data.length;i+=4,j++)gray[j]=Math.round(.299*src.data[i]+.587*src.data[i+1]+.114*src.data[i+2]);
+ const imageData={width:canvas.width,height:canvas.height,data:gray};
+ const allY=detectDarkLines(imageData,'y',145,.72).filter(y=>y>4&&y<canvas.height-4);
+ const allX=detectDarkLines(imageData,'x',145,.72).filter(x=>x>4&&x<canvas.width-4);
+ const worker=await T.createWorker('eng');
+ const ocrCanvas=async(x0,y0,x1,y1)=>{const w=Math.max(1,Math.round(x1-x0)),h=Math.max(1,Math.round(y1-y0));const c=document.createElement('canvas');c.width=Math.round(w*1.6);c.height=Math.round(h*1.6);const cc=c.getContext('2d',{willReadFrequently:true});cc.fillStyle='#fff';cc.fillRect(0,0,c.width,c.height);cc.drawImage(canvas,x0,y0,w,h,0,0,c.width,c.height);const r=await worker.recognize(c);return {text:cleanOcrCellText(r?.data?.text||''),confidence:Number(r?.data?.confidence||0)}};
+ try{
+  // Header time labels. The two-page college routine layout uses a narrow recess column between 1:50 and 2:20.
+  const headerBand=allY.filter(y=>y>canvas.height*.02&&y<canvas.height*.20); const hTop=headerBand[0]||Math.round(canvas.height*.14),hBottom=headerBand[1]||Math.round(canvas.height*.20);
+  const headerWords=(await ocrCanvas(0,hTop+2,canvas.width,hBottom-2)).text.split(' ');
+  // Prefer fixed column boundaries detected in the header; fall back to known relative positions from OCR time labels.
+  const headerXs=allX.filter(x=>x>canvas.width*.16&&x<canvas.width*.98); const baseBounds=[];
+  for(let i=0;i<headerXs.length-1;i++){const a=headerXs[i],b=headerXs[i+1];if(b-a>45)baseBounds.push({left:a,right:b})}
+  // If line detection is sparse, reconstruct the time columns from the actual image's common 9-column geometry.
+  let columns=baseBounds.filter(b=>b.right-b.left>45&&b.right-b.left<canvas.width*.25);
+  if(columns.length<6){
+   const left=Math.round(canvas.width*.177), right=Math.round(canvas.width*.934), widths=[.15,.15,.15,.15,.10,.19,.17,.17,.19];let x=left;columns=[];for(const f of widths){const nx=x+(right-left)*f;columns.push({left:x,right:nx});x=nx}
+  }
+  // Normalize to the actual time slots; remove the year/day area and the recess column.
+  const timeSlots=[
+   {start:'10:30',end:'11:20'},{start:'11:20',end:'12:10'},{start:'12:10',end:'13:00'},{start:'13:00',end:'13:50'},
+   {start:'14:20',end:'15:10'},{start:'15:10',end:'16:00'},{start:'16:00',end:'16:50'},{start:'16:50',end:'17:40'}
+  ];
+  // Build slot boundaries from the image header's vertical rules by detecting x-lines in the header area.
+  const headerX=[]; for(const x of allX){let dark=0;for(let y=hTop;y<hBottom;y++)if(gray[y*canvas.width+x]<145)dark++;if(dark>=(hBottom-hTop)*.55)headerX.push(x)}
+  const compact=[];for(const x of headerX){if(!compact.length||x-compact[compact.length-1]>2)compact.push(x)}
+  let slotBounds=compact.filter(x=>x>canvas.width*.16&&x<canvas.width*.97);
+  if(slotBounds.length<9){slotBounds=[];const ratios=[.177,.252,.327,.411,.496,.551,.598,.652,.745,.837,.934];for(const r of ratios)slotBounds.push(Math.round(canvas.width*r))}
+  // Find the recess boundaries and convert the remaining intervals into the eight actual time slots.
+  const intervals=[];for(let i=0;i<slotBounds.length-1;i++){const l=slotBounds[i],r=slotBounds[i+1];if(r-l>35)intervals.push({left:l,right:r})}
+  const actualIntervals=intervals.length>=8?intervals.slice(0,4).concat(intervals.slice(Math.max(5,intervals.length-4))):[];
+  const slotRects=actualIntervals.length===8?actualIntervals:timeSlots.map((t,i)=>({left:canvas.width*(.177+i*.095),right:canvas.width*(.177+(i+1)*.095)}));
+
+  // Horizontal row bands: every day in these routine sheets contains three year rows. Day labels are used to map groups of three bands.
+  const yBounds=allY.filter(y=>y>canvas.height*.18&&y<canvas.height*.98); const bands=[];for(let i=0;i<yBounds.length-1;i++){const top=yBounds[i]+3,bottom=yBounds[i+1]-3;if(bottom-top>=28&&bottom-top<130)bands.push({top,bottom})}
+  const dayWords=await ocrCanvas(0,Math.max(0,Math.min(...yBounds,canvas.height*.2)),Math.min(canvas.width*.16,260),canvas.height*.98);
+  const dayMatches=[]; const dayRegex=/(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sun|Mon|Tue|Wed|Thu|Fri|Sat)/ig;let dm;while((dm=dayRegex.exec(dayWords.text||'')))dayMatches.push(normalizeWeekday(dm[1]));
+  const days=dayMatches.length>=1?dayMatches.slice(0,Math.ceil(bands.length/3)):[1,2,3,4,5,6].slice(0,Math.ceil(bands.length/3));
+  const rows=[];
+  for(let bi=0;bi<bands.length;bi++){
+   const day=days[Math.min(days.length-1,Math.floor(bi/3))]; if(day==null)continue; const band=bands[bi];
+   // Detect vertical rules specifically inside this row so merged cells remain merged. Each resulting cell is OCR'd independently.
+   const rowX=[];for(let x=0;x<canvas.width;x++){let dark=0;for(let y=band.top;y<band.bottom;y++)if(gray[y*canvas.width+x]<145)dark++;if(dark>=(band.bottom-band.top)*.62)rowX.push(x)}
+   const rb=[];for(const x of rowX){if(!rb.length||x-rb[rb.length-1]>2)rb.push(x)}
+   const cellBounds=rb.filter(x=>x>canvas.width*.16&&x<canvas.width*.98);const cells=[];for(let i=0;i<cellBounds.length-1;i++){const l=cellBounds[i],r=cellBounds[i+1];if(r-l>30)cells.push({left:l,right:r})}
+   for(const cell of cells){
+    if(cell.left<canvas.width*.17)continue;
+    // Skip the recess column by its horizontal location.
+    const cx=(cell.left+cell.right)/2; if(cx>canvas.width*.49&&cx<canvas.width*.56)continue;
+    const ocr=await ocrCanvas(cell.left+4,band.top+4,cell.right-4,band.bottom-4); let title=ocr.text;
+    if(!likelyClassText(title)||ocr.confidence<25)continue;
+    title=title.replace(/\b(?:2d|3d|4th|2nd|3rd|year)\b/ig,'').trim();
+    // Determine which actual time columns this merged cell covers by overlap with slot rectangles.
+    const overlap=slotRects.map((r,i)=>({i,ov:Math.max(0,Math.min(cell.right,r.right)-Math.max(cell.left,r.left))})).filter(x=>x.ov>10).map(x=>x.i); if(!overlap.length)continue;
+    const first=Math.min(...overlap),last=Math.max(...overlap); const st=timeSlots[first],en=timeSlots[last]; if(!st||!en)continue;
+    rows.push({weekday:day,start_time:parseTimeValue(st.start),end_time:parseTimeValue(en.end),title,room:parseRoomFromOcr(await ocrCanvas(Math.max(0,cell.left-130),band.top+2,Math.max(0,cell.left-4),band.bottom-2).then(x=>x.text)),source:'ocr',confidence:'geometry'});
+   }
+  }
+  const unique=[];const seen=new Set();for(const r of rows){const k=`${r.weekday}|${r.start_time}|${r.end_time}|${r.title.toLowerCase()}`;if(!seen.has(k)){seen.add(k);unique.push(r)}}
+  return {rows:unique,text:headerWords.concat(dayWords.text||'').join(' '),confidence:unique.length?'high':'low'};
+ }finally{await worker.terminate()}
+}
+function loadPdfJs(){return new Promise((resolve,reject)=>{if(window.pdfjsLib){resolve(window.pdfjsLib);return}const existing=document.querySelector('script[data-orbit-pdfjs]');if(existing){existing.addEventListener('load',()=>resolve(window.pdfjsLib));existing.addEventListener('error',()=>reject(new Error('Could not load the PDF reader.')));return}const script=document.createElement('script');script.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';script.async=true;script.dataset.orbitPdfjs='1';script.onload=()=>{if(window.pdfjsLib)window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';resolve(window.pdfjsLib)};script.onerror=()=>reject(new Error('Could not load the PDF reader. Check your internet connection and try again.'));document.head.appendChild(script)})}
+async function ocrPdfFile(file,T){
+ const pdfjs=await loadPdfJs();const pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;let combined='';let rows=[];const limit=Math.min(pdf.numPages,12);
+ for(let n=1;n<=limit;n++){const page=await pdf.getPage(n);const viewport=page.getViewport({scale:2.1});const canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);const ctx=canvas.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport}).promise;const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(blob){const result=await recognizeTimetableImage(blob,T);rows.push(...(result.rows||[]));combined+=`${result.text||''}\n`;}canvas.width=1;canvas.height=1}
+ const unique=[];const seen=new Set();for(const r of rows){const k=`${r.weekday}|${r.start_time}|${r.end_time}|${r.title.toLowerCase()}`;if(!seen.has(k)){seen.add(k);unique.push(r)}}return {text:combined,rows:unique,pages:pdf.numPages,processed:limit}
+}
+function loadTesseract(){return new Promise((resolve,reject)=>{if(window.Tesseract){resolve(window.Tesseract);return}const existing=document.querySelector('script[data-orbit-tesseract]');if(existing){existing.addEventListener('load',()=>resolve(window.Tesseract));existing.addEventListener('error',()=>reject(new Error('Could not load OCR engine.')));return}const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';script.async=true;script.dataset.orbitTesseract='1';script.onload=()=>resolve(window.Tesseract);script.onerror=()=>reject(new Error('Could not load OCR engine. Check your internet connection and try again.'));document.head.appendChild(script)})}
+function timetableTaskRow(entry,occurrence,userId){const start=occurrence.date,end=occurrence.endDate||occurrence.date;return {user_id:userId||undefined,title:entry.title,notes:entry.room?`Classroom: ${entry.room}`:'',subject_id:null,due_date:end,start_date:start,end_date:end,start_time:entry.start_time,end_time:entry.end_time,estimated_minutes:durationMinutes(start,entry.start_time,end,entry.end_time),priority:'Medium',status:'Todo',tags:['class'],timetable_source:true,timetable_weekday:entry.weekday,timetable_room:entry.room||null,timetable_cancelled:false,timetable_key:`${entry.weekday}|${entry.start_date||''}|${entry.end_date||''}|${entry.start_time}|${entry.end_time}|${entry.title}`};}
 function App(){
  const [user,setUser]=useState(null);
- const [theme,setTheme]=useState(()=>localStorage.getItem('orbit_theme')||'dark'); const [density,setDensity]=useState(()=>localStorage.getItem('orbit_density')||'Comfortable'); const [subjects,setSubjects]=useState([]); const [tasks,setTasks]=useState([]); const [sessions,setSessions]=useState([]); const [tab,setTab]=useState('Dashboard'); const [search,setSearch]=useState(''); const [filter,setFilter]=useState('All'); const [modal,setModal]=useState(null); const [mobile,setMobile]=useState(false); const [timer,setTimer]=useState(()=>Number(localStorage.getItem('orbit_default_focus')||25)*60); const [running,setRunning]=useState(false); const [focusMode,setFocusMode]=useState('pomodoro'); const [pomodoros,setPomodoros]=useState(1); const [customMinutes,setCustomMinutes]=useState(30); const [profileOpen,setProfileOpen]=useState(false); const [searchOpen,setSearchOpen]=useState(false); const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>localStorage.getItem('orbit_sidebar_collapsed')==='1'); const [selectedSubject,setSelectedSubject]=useState(null); const [settingsPanel,setSettingsPanel]=useState(null); const [sessionModal,setSessionModal]=useState(false); const [subjectEdit,setSubjectEdit]=useState(null); const [authModal,setAuthModal]=useState(false); const [googleProviderToken,setGoogleProviderToken]=useState(null);
+ const [theme,setTheme]=useState(()=>localStorage.getItem('orbit_theme')||'dark'); const [density,setDensity]=useState(()=>localStorage.getItem('orbit_density')||'Comfortable'); const [subjects,setSubjects]=useState([]); const [tasks,setTasks]=useState([]); const [sessions,setSessions]=useState([]); const [tab,setTab]=useState('Dashboard'); const [search,setSearch]=useState(''); const [filter,setFilter]=useState('All'); const [modal,setModal]=useState(null); const [mobile,setMobile]=useState(false); const [timer,setTimer]=useState(()=>Number(localStorage.getItem('orbit_default_focus')||25)*60); const [running,setRunning]=useState(false); const [focusMode,setFocusMode]=useState('pomodoro'); const [pomodoros,setPomodoros]=useState(1); const [customMinutes,setCustomMinutes]=useState(30); const [profileOpen,setProfileOpen]=useState(false); const [searchOpen,setSearchOpen]=useState(false); const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>localStorage.getItem('orbit_sidebar_collapsed')==='1'); const [selectedSubject,setSelectedSubject]=useState(null); const [settingsPanel,setSettingsPanel]=useState(null); const [sessionModal,setSessionModal]=useState(false); const [subjectEdit,setSubjectEdit]=useState(null); const [authModal,setAuthModal]=useState(false); const [googleProviderToken,setGoogleProviderToken]=useState(null); const [timetableModal,setTimetableModal]=useState(false); const [timetableSeriesEdit,setTimetableSeriesEdit]=useState(null);
  useEffect(()=>{
   const root=document.documentElement;
   const apply=()=>{
@@ -151,7 +255,7 @@ function App(){
   const map=Object.fromEntries(subjects.map(s=>[s.id,s]));
   let changed=false; const nextTasks=[];
   for(const task of tasks){
-   if(!task.due_date){nextTasks.push(task);continue}
+   if(!task.due_date||task.timetable_cancelled){nextTasks.push(task);continue}
    try{
     const synced=await syncTaskToGoogleCalendar(googleProviderToken,task,map[task.subject_id]?.name);
     if(synced.google_event_id!==task.google_event_id){
@@ -271,6 +375,21 @@ function App(){
   }
   setTasks(x=>x.filter(a=>a.id!==t.id));
  }
+ async function deleteTimetableGroup(task){
+  const title=String(task?.title||'').trim(); if(!title)return;
+  const group=tasks.filter(x=>x.timetable_source&&String(x.title||'').trim().toLowerCase()===title.toLowerCase());
+  if(!group.length)return;
+  if(!window.confirm(`Delete all ${group.length} scheduled “${title}” classes? This removes every timetable occurrence for this class and linked Google Calendar events.`))return;
+  if(cloudReady&&user){
+   const linked=group.filter(item=>item.google_event_id);
+   if(linked.length&&!googleProviderToken){alert('These classes are linked to Google Calendar, but Calendar access is not connected. Sign out and sign in with Google again before deleting the series.');return}
+   for(const item of linked){
+    try{await deleteGoogleCalendarEvent(googleProviderToken,item.google_event_id)}catch(e){if(e.status!==404){alert(`Could not remove “${title}” from Google Calendar. ${e.message||''}`);return}}
+   }
+   const {error}=await supabase.from('tasks').delete().in('id',group.map(x=>x.id)); if(error){alert(`Could not delete the class series. ${error.message}`);return}
+  }
+  setTasks(x=>x.filter(item=>!group.some(g=>g.id===item.id)));
+ }
  async function deleteSubject(subject){
   if(!subject) return;
   const count=tasks.filter(t=>t.subject_id===subject.id).length;
@@ -295,9 +414,74 @@ function App(){
   setSubjects(x=>x.filter(s=>s.id!==subject.id));
   setSelectedSubject(null);
  }
+ async function saveTimetableSeries(task,changes){
+  if(!task?.timetable_source||!task.timetable_key){alert('This class is missing its recurring schedule information.');return}
+  const effective=changes.effective_date||localDateKey(new Date());
+  const nextStart=changes.start_time||task.start_time||null;
+  const nextEnd=changes.end_time||task.end_time||null;
+  if(!nextStart||!nextEnd){alert('Please select both a start and end time.');return}
+  const series=tasks.filter(t=>t.timetable_source&&t.timetable_key===task.timetable_key&&t.due_date>=effective).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''));
+  if(!series.length){alert('There are no future occurrences to update from that date.');return}
+  const payload={title:String(changes.title||task.title||'').trim(),start_time:nextStart,end_time:nextEnd,timetable_room:changes.room||null};
+  if(!payload.title){alert('Class name is required.');return}
+  const durationFor=item=>{const sd=item.start_date||item.due_date;let ed=item.end_date||item.due_date;if(timeToMinutes(nextEnd)<=timeToMinutes(nextStart)&&ed===sd)ed=nextDateKey(ed);return durationMinutes(sd,nextStart,ed,nextEnd)};
+  if(cloudReady&&user){
+   const updated=[];
+   for(const item of series){
+    const row={title:payload.title||null,start_time:payload.start_time,end_time:payload.end_time,estimated_minutes:durationFor(item),notes:payload.timetable_room?`Classroom: ${payload.timetable_room}`:'',timetable_room:payload.timetable_room};
+    const {data,error}=await supabase.from('tasks').update(row).eq('id',item.id).select().single();
+    if(error){alert(`Could not update the class series. ${error.message}`);return}
+    let synced=data;
+    if(googleProviderToken&&!item.timetable_cancelled){
+     try{synced=await syncTaskToGoogleCalendar(googleProviderToken,data,subjectMap[data.subject_id]?.name);if(synced.google_event_id!==(data.google_event_id||null)){const eu=await supabase.from('tasks').update({google_event_id:synced.google_event_id||null}).eq('id',data.id).select().single();if(!eu.error&&eu.data)synced=eu.data}}
+     catch(e){if(e.status===401)alert('The class was updated, but Google Calendar access expired. Sign out and sign in again to reconnect Calendar.');else console.warn('Calendar series update failed:',e)}
+    }
+    updated.push(synced);
+   }
+   setTasks(x=>x.map(t=>updated.find(u=>u.id===t.id)||t));
+  }else{
+   setTasks(x=>x.map(t=>series.some(u=>u.id===t.id)?{...t,...payload,notes:payload.timetable_room?`Classroom: ${payload.timetable_room}`:'',estimated_minutes:durationFor(t)}:t));
+  }
+  setTimetableSeriesEdit(null);
+ }
+ async function importTimetable(entries,startDate,endDate){
+  const clean=entries.filter(e=>Number.isInteger(e.weekday)&&e.start_time&&e.end_time&&String(e.title||'').trim());
+  if(!clean.length){alert('No valid classes were detected. Add or correct the rows and try again.');return}
+  const rows=clean.flatMap(entry=>buildTimetableOccurrences(entry,startDate,endDate).map(occ=>timetableTaskRow(entry,occ,user?.id)));
+  if(!rows.length){alert('No class dates fall inside the selected term range.');return}
+  if(cloudReady&&user){
+   const {data,error}=await supabase.from('tasks').insert(rows.map(({user_id,...r})=>({...r,user_id:user.id}))).select();
+   if(error){alert(`Could not import timetable. ${error.message}`);return}
+   let imported=data||[];
+   if(googleProviderToken){
+    for(const task of imported){
+     try{
+      const synced=await syncTaskToGoogleCalendar(googleProviderToken,task,subjectMap[task.subject_id]?.name);
+      if(synced.google_event_id){const {data:updated}=await supabase.from('tasks').update({google_event_id:synced.google_event_id}).eq('id',task.id).select().single();if(updated)Object.assign(task,updated)}
+     }catch(e){if(e.status===401){alert('Timetable imported, but Google Calendar access expired. Sign out and sign in again.');break}console.warn('Calendar timetable sync failed:',e)}
+    }
+   }
+   setTasks(x=>[...imported,...x]);
+  }else setTasks(x=>[...rows.map(r=>({...r,id:uid()})),...x]);
+  setTimetableModal(false);setTab('Timetable');
+ }
+ async function cancelClass(task){
+  if(!task?.timetable_source)return;
+  const action=task.timetable_cancelled?'restore':'cancel';
+  if(!window.confirm(task.timetable_cancelled?`Restore “${task.title||'Class'}” for this occurrence?`:`Cancel “${task.title||'Class'}” for ${task.due_date||'this occurrence'}?`))return;
+  if(cloudReady&&user){
+   if(action==='cancel'&&task.google_event_id){if(!googleProviderToken){alert('This class is linked to Google Calendar. Sign out and sign in again to reconnect Calendar before cancelling it.');return}try{await deleteGoogleCalendarEvent(googleProviderToken,task.google_event_id)}catch(e){if(e.status!==404){alert(`Could not remove this class from Google Calendar. ${e.message||''}`);return}}}
+   const {data,error}=await supabase.from('tasks').update({timetable_cancelled:!task.timetable_cancelled,google_event_id:action==='cancel'?null:task.google_event_id}).eq('id',task.id).select().single();
+   if(error){alert(`Could not update class. ${error.message}`);return}
+   let next=data;
+   if(action==='restore'&&googleProviderToken){try{next=await syncTaskToGoogleCalendar(googleProviderToken,next,subjectMap[next.subject_id]?.name);if(next.google_event_id)data.google_event_id=next.google_event_id;await supabase.from('tasks').update({google_event_id:next.google_event_id||null}).eq('id',task.id)}catch(e){if(e.status===401)alert('Class restored, but Google Calendar access expired. Sign out and sign in again.')}}
+   setTasks(x=>x.map(t=>t.id===task.id?next:t));return
+  }
+  setTasks(x=>x.map(t=>t.id===task.id?{...t,timetable_cancelled:!t.timetable_cancelled,google_event_id:action==='cancel'?null:t.google_event_id}:t));
+ }
  async function logSession(minutes,subjectId,date){const mins=Math.max(1,Math.round(Number(minutes)||1));const row={user_id:user?.id,subject_id:subjectId||subjects[0]?.id,minutes:mins,session_date:date||localDateKey(new Date())};if(cloudReady&&user){const {data}=await supabase.from('study_sessions').insert(row).select().single();if(data)setSessions(x=>[data,...x])}else setSessions(x=>[{...row,id:uid()},...x]);setRunning(false);setSessionModal(false)}
- const done=tasks.filter(t=>t.status==='Done').length, progress=tasks.length?Math.round(done/tasks.length*100):0; const today=localDateKey(new Date()); const dueToday=tasks.filter(t=>t.due_date===today&&t.status!=='Done').length; const hours=Math.round((sessions.reduce((a,b)=>a+b.minutes,0)/60)*10)/10;
- const visibleTasks=tasks.filter(t=>(filter==='All'||t.status===filter||t.priority===filter)&&(`${t.title} ${t.notes} ${(t.tags||[]).join(' ')}`.toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>{const ad=a.status==='Done',bd=b.status==='Done';if(ad!==bd)return ad?1:-1;return (a.due_date||'9999-12-31').localeCompare(b.due_date||'9999-12-31')});
+ const activeTasks=tasks.filter(t=>!t.timetable_cancelled&&!t.timetable_source); const done=activeTasks.filter(t=>t.status==='Done').length, progress=activeTasks.length?Math.round(done/activeTasks.length*100):0; const today=localDateKey(new Date()); const dueToday=activeTasks.filter(t=>t.due_date===today&&t.status!=='Done').length; const hours=Math.round((sessions.reduce((a,b)=>a+b.minutes,0)/60)*10)/10;
+ const visibleTasks=activeTasks.filter(t=>!t.timetable_source&&(filter==='All'||t.status===filter||t.priority===filter)&&(`${t.title} ${t.notes} ${(t.tags||[]).join(' ')}`.toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>{const ad=a.status==='Done',bd=b.status==='Done';if(ad!==bd)return ad?1:-1;return (a.due_date||'9999-12-31').localeCompare(b.due_date||'9999-12-31')});
  const subjectMap=Object.fromEntries(subjects.map(s=>[s.id,s]));
  const searchTerm=search.trim().toLowerCase();
  const searchResults=searchTerm?[
@@ -310,7 +494,7 @@ function App(){
   else {setTab('Subjects');setSelectedSubject(result.id);}
   clearSearch();
  };
- return <div className={'app density-'+density.toLowerCase()}><aside className={(mobile?'side open':'side')+(sidebarCollapsed?' collapsed':'')}><div className="brand"><div className="logo">✦</div><div className="brandCopy"><b>ORBIT Tracker</b><small>plan, organize, and get things done</small></div><button className="iconbtn close" onClick={()=>setMobile(false)} aria-label="Close sidebar"><X size={18}/></button></div><nav>{[['Dashboard',LayoutDashboard],['Tasks',CheckSquare],['Subjects',BookOpen],['Calendar',CalendarDays],['Focus',Timer]].map(([n,I])=><button className={tab===n?'nav active':'nav'} onClick={()=>{setTab(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span></button>)}<button className={tab==='Settings'?'nav active':'nav'} onClick={()=>{setTab('Settings');setMobile(false)}}><Settings size={18}/><span>Settings</span></button></nav><div className="sideBottom"><div className="quoteCard"><div className="quoteMark">“</div><p>Small steps, every day.</p><small>Progress is built one task at a time.</small><div className="onlineStatus"><span className="dot onlineDot"/><span>Online</span></div></div></div></aside><main><header><button className="iconbtn menu" onClick={()=>{if(window.innerWidth<=800){setMobile(true)}else{setSidebarCollapsed(v=>{const next=!v;localStorage.setItem('orbit_sidebar_collapsed',next?'1':'0');return next})}}} aria-label={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"} title={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"}><Menu/></button><div className="crumb">{tab}<span> / </span><b>{tab==='Dashboard'?'Today':'Workspace'}</b></div><div className="headActions"><div className={'search '+(searchTerm?'searchActive':'')}><Search size={17}/><input value={search} onFocus={()=>searchTerm&&setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} onKeyDown={e=>{if(e.key==='Enter'&&searchResults[0])openSearchResult(searchResults[0]);if(e.key==='Escape'){clearSearch();setSearchOpen(false)}}} placeholder="Search tasks, notes, subjects..." aria-label="Search tasks, notes, and subjects"/><button type="button" className="searchClear" onClick={()=>{clearSearch();setSearchOpen(false)}} aria-label="Clear search" title="Clear search">{searchTerm?<X size={14}/>:null}</button>{searchTerm&&searchOpen&&<div className="searchResults" role="listbox" aria-label="Search results">{searchResults.length?searchResults.map(result=>{const Icon=result.icon;return <button type="button" className="searchResult" key={result.type+'-'+result.id} onClick={()=>openSearchResult(result)}><span className="searchResultIcon"><Icon size={15}/></span><span className="searchResultText"><b>{result.title}</b><small>{result.meta}</small></span><ArrowUpRight size={14}/></button>}):<div className="searchNoResults"><Search size={16}/><span>No matching tasks or subjects</span></div>}</div>}</div>{user?<div className="profile"><button onClick={()=>setProfileOpen(!profileOpen)} className="avatar">{(user.user_metadata?.full_name||user.email||user.phone||'U')[0].toUpperCase()}</button>{profileOpen&&<div className="profileMenu"><b>{user.user_metadata?.full_name||'User'}</b><small>{user.email||user.phone}</small><button onClick={logout}><LogOut size={15}/> Sign out</button></div>}</div>:<button className="google" onClick={login}>Sign in</button>}</div></header>{tab==='Dashboard'&&<Dashboard progress={progress} dueToday={dueToday} hours={hours} tasks={tasks} subjects={subjects} subjectMap={subjectMap} toggleTask={toggleTask} updateTask={updateTask} setTab={setTab} setModal={setModal}/>} {tab==='Tasks'&&<Tasks tasks={visibleTasks} subjectMap={subjectMap} toggleTask={toggleTask} deleteTask={deleteTask} setModal={setModal} filter={filter} setFilter={setFilter}/>} {tab==='Subjects'&&(selectedSubject?<SubjectDetail subject={subjects.find(s=>s.id===selectedSubject)} tasks={tasks} setTasks={setTasks} subjects={subjects} setSubjects={setSubjects} setSelectedSubject={setSelectedSubject} setModal={setModal} cloudReady={cloudReady} user={user} deleteTask={deleteTask} deleteSubject={deleteSubject} onEditSubject={setSubjectEdit} toggleTask={toggleTask}/>:<Subjects subjects={subjects} tasks={tasks} setModal={setModal} onSelect={setSelectedSubject}/>)} {tab==='Calendar'&&<Calendar tasks={tasks} subjectMap={subjectMap} setModal={setModal}/>} {tab==='Focus'&&<Focus timer={timer} running={running} setRunning={setRunning} setTimer={setTimer} onLogSession={()=>setSessionModal(true)} focusMode={focusMode} setFocusMode={setFocusMode} pomodoros={pomodoros} setPomodoros={setPomodoros} customMinutes={customMinutes} setCustomMinutes={setCustomMinutes}/>}  {tab==='Settings'&&<SettingsPage theme={theme} setTheme={setTheme} user={user} login={login} logout={logout} onOpen={setSettingsPanel}/>} {settingsPanel&&<SettingsDetail type={settingsPanel} theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} user={user} login={login} logout={logout} onFocusLengthChange={m=>{setRunning(false);setFocusMode('custom');setCustomMinutes(m);setTimer(m*60)}} onClearLocalData={()=>{if(!window.confirm('Clear all local tasks, subjects, and sessions? This cannot be undone.'))return;localStorage.removeItem('orbit_subjects');localStorage.removeItem('orbit_tasks');localStorage.removeItem('orbit_sessions');setSubjects([]);setTasks([]);setSessions([]);setSelectedSubject(null);}} onClose={()=>setSettingsPanel(null)}/>} </main>{(modal==='task'||(modal?.type==='task'))&&<TaskModal subjects={subjects} initialDate={modal?.dueDate||''} initialTask={modal?.task||null} onClose={()=>setModal(null)} onSave={saveTask}/>} {modal==='subject'&&<SubjectModal onClose={()=>setModal(null)} onSave={saveSubject}/>} {subjectEdit&&<SubjectEditModal subject={subjectEdit} onClose={()=>setSubjectEdit(null)} onSave={v=>updateSubject(subjectEdit,v)}/>} {sessionModal&&<SessionModal subjects={subjects} defaultMinutes={Math.max(1,Math.round(timer/60))} onClose={()=>setSessionModal(false)} onSave={logSession}/>} {authModal&&<AuthModal cloudReady={cloudReady} onClose={()=>setAuthModal(false)} onGoogle={loginGoogle}/>}</div>
+ return <div className={'app density-'+density.toLowerCase()}><aside className={(mobile?'side open':'side')+(sidebarCollapsed?' collapsed':'')}><div className="brand"><div className="logo">✦</div><div className="brandCopy"><b>ORBIT Tracker</b><small>plan, organize, and get things done</small></div><button className="iconbtn close" onClick={()=>setMobile(false)} aria-label="Close sidebar"><X size={18}/></button></div><nav>{[['Dashboard',LayoutDashboard],['Tasks',CheckSquare],['Subjects',BookOpen],['Calendar',CalendarDays],['Timetable',CalendarClock],['Focus',Timer]].map(([n,I])=><button className={tab===n?'nav active':'nav'} onClick={()=>{setTab(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span></button>)}<button className={tab==='Settings'?'nav active':'nav'} onClick={()=>{setTab('Settings');setMobile(false)}}><Settings size={18}/><span>Settings</span></button></nav><div className="sideBottom"><div className="quoteCard"><div className="quoteMark">“</div><p>Small steps, every day.</p><small>Progress is built one task at a time.</small><div className="onlineStatus"><span className="dot onlineDot"/><span>Online</span></div></div></div></aside><main><header><button className="iconbtn menu" onClick={()=>{if(window.innerWidth<=800){setMobile(true)}else{setSidebarCollapsed(v=>{const next=!v;localStorage.setItem('orbit_sidebar_collapsed',next?'1':'0');return next})}}} aria-label={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"} title={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"}><Menu/></button><div className="crumb">{tab}<span> / </span><b>{tab==='Dashboard'?'Today':'Workspace'}</b></div><div className="headActions"><div className={'search '+(searchTerm?'searchActive':'')}><Search size={17}/><input value={search} onFocus={()=>searchTerm&&setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} onKeyDown={e=>{if(e.key==='Enter'&&searchResults[0])openSearchResult(searchResults[0]);if(e.key==='Escape'){clearSearch();setSearchOpen(false)}}} placeholder="Search tasks, notes, subjects..." aria-label="Search tasks, notes, and subjects"/><button type="button" className="searchClear" onClick={()=>{clearSearch();setSearchOpen(false)}} aria-label="Clear search" title="Clear search">{searchTerm?<X size={14}/>:null}</button>{searchTerm&&searchOpen&&<div className="searchResults" role="listbox" aria-label="Search results">{searchResults.length?searchResults.map(result=>{const Icon=result.icon;return <button type="button" className="searchResult" key={result.type+'-'+result.id} onClick={()=>openSearchResult(result)}><span className="searchResultIcon"><Icon size={15}/></span><span className="searchResultText"><b>{result.title}</b><small>{result.meta}</small></span><ArrowUpRight size={14}/></button>}):<div className="searchNoResults"><Search size={16}/><span>No matching tasks or subjects</span></div>}</div>}</div>{user?<div className="profile"><button onClick={()=>setProfileOpen(!profileOpen)} className="avatar">{(user.user_metadata?.full_name||user.email||user.phone||'U')[0].toUpperCase()}</button>{profileOpen&&<div className="profileMenu"><b>{user.user_metadata?.full_name||'User'}</b><small>{user.email||user.phone}</small><button onClick={logout}><LogOut size={15}/> Sign out</button></div>}</div>:<button className="google" onClick={login}>Sign in</button>}</div></header>{tab==='Dashboard'&&<Dashboard progress={progress} dueToday={dueToday} hours={hours} tasks={tasks} subjects={subjects} subjectMap={subjectMap} toggleTask={toggleTask} updateTask={updateTask} setTab={setTab} setModal={setModal}/>} {tab==='Tasks'&&<Tasks tasks={visibleTasks} subjectMap={subjectMap} toggleTask={toggleTask} deleteTask={deleteTask} setModal={setModal} filter={filter} setFilter={setFilter}/>} {tab==='Subjects'&&(selectedSubject?<SubjectDetail subject={subjects.find(s=>s.id===selectedSubject)} tasks={tasks} setTasks={setTasks} subjects={subjects} setSubjects={setSubjects} setSelectedSubject={setSelectedSubject} setModal={setModal} cloudReady={cloudReady} user={user} deleteTask={deleteTask} deleteSubject={deleteSubject} onEditSubject={setSubjectEdit} toggleTask={toggleTask}/>:<Subjects subjects={subjects} tasks={tasks} setModal={setModal} onSelect={setSelectedSubject}/>)} {tab==='Calendar'&&<Calendar tasks={tasks.filter(t=>!t.timetable_cancelled)} subjectMap={subjectMap} setModal={setModal}/>} {tab==='Timetable'&&<Timetable tasks={tasks} onImport={()=>setTimetableModal(true)} onCancel={cancelClass} onEdit={t=>setModal({type:'task',task:t})} onEditSeries={t=>setTimetableSeriesEdit(t)} onDeleteSeries={deleteTimetableGroup}/>} {tab==='Focus'&&<Focus timer={timer} running={running} setRunning={setRunning} setTimer={setTimer} onLogSession={()=>setSessionModal(true)} focusMode={focusMode} setFocusMode={setFocusMode} pomodoros={pomodoros} setPomodoros={setPomodoros} customMinutes={customMinutes} setCustomMinutes={setCustomMinutes}/>}  {tab==='Settings'&&<SettingsPage theme={theme} setTheme={setTheme} user={user} login={login} logout={logout} onOpen={setSettingsPanel}/>} {settingsPanel&&<SettingsDetail type={settingsPanel} theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} user={user} login={login} logout={logout} onFocusLengthChange={m=>{setRunning(false);setFocusMode('custom');setCustomMinutes(m);setTimer(m*60)}} onClearLocalData={()=>{if(!window.confirm('Clear all local tasks, subjects, and sessions? This cannot be undone.'))return;localStorage.removeItem('orbit_subjects');localStorage.removeItem('orbit_tasks');localStorage.removeItem('orbit_sessions');setSubjects([]);setTasks([]);setSessions([]);setSelectedSubject(null);}} onClose={()=>setSettingsPanel(null)}/>} </main>{(modal==='task'||(modal?.type==='task'))&&<TaskModal subjects={subjects} initialDate={modal?.dueDate||''} initialTask={modal?.task||null} onClose={()=>setModal(null)} onSave={saveTask}/>} {modal==='subject'&&<SubjectModal onClose={()=>setModal(null)} onSave={saveSubject}/>} {subjectEdit&&<SubjectEditModal subject={subjectEdit} onClose={()=>setSubjectEdit(null)} onSave={v=>updateSubject(subjectEdit,v)}/>} {sessionModal&&<SessionModal subjects={subjects} defaultMinutes={Math.max(1,Math.round(timer/60))} onClose={()=>setSessionModal(false)} onSave={logSession}/>} {authModal&&<AuthModal cloudReady={cloudReady} onClose={()=>setAuthModal(false)} onGoogle={loginGoogle}/>} {timetableModal&&<TimetableImportModal onClose={()=>setTimetableModal(false)} onImport={importTimetable}/>} {timetableSeriesEdit&&<TimetableSeriesEditModal task={timetableSeriesEdit} onClose={()=>setTimetableSeriesEdit(null)} onSave={saveTimetableSeries}/>}</div>
 }
 function Dropdown({value,onChange,options,ariaLabel='Select option',className='',optionLabels={},onDeleteOption}){
  const [open,setOpen]=useState(false); const ref=useRef(null);
@@ -523,6 +707,7 @@ function SubjectDetail({subject,tasks,setTasks,subjects,setSubjects,setSelectedS
    {section==='notes'&&<div className="panel subjectNotesPanel pdfPanel"><div className="panelHead"><div><span className="eyebrow">SUBJECT NOTES</span><h2>PDF notes & resources</h2><p className="pdfIntro">Keep books, lecture notes, reference material, and other PDFs together for this subject.</p></div><div><input ref={fileInputRef} className="hiddenFileInput" type="file" accept="application/pdf,.pdf" multiple onChange={uploadPdfs}/><button className="primary" onClick={()=>fileInputRef.current?.click()} disabled={pdfBusy}><Upload size={16}/>{pdfBusy?'Adding…':'Add PDFs'}</button></div></div>{pdfs.length?<div className="pdfList">{pdfs.map(pdf=><div className="pdfCard" key={pdf.id}><div className="pdfIcon"><File size={20}/></div><div className="pdfInfo"><b title={pdf.name}>{pdf.name}</b><span>{formatBytes(pdf.size)} · Added {new Date(pdf.created_at).toLocaleDateString()}</span></div><div className="pdfActions"><button className="iconbtn" onClick={()=>openPdf(pdf.id)} aria-label={`Open ${pdf.name}`} title="Open PDF"><ExternalLink size={16}/></button><button className="iconbtn" onClick={()=>openPdf(pdf.id,true)} aria-label={`Download ${pdf.name}`} title="Download"><Download size={16}/></button><button className="iconbtn dangerIcon" onClick={()=>removePdf(pdf.id)} aria-label={`Remove ${pdf.name}`} title="Remove"><Trash2 size={16}/></button></div></div>)}</div>:<div className="pdfEmpty"><div className="pdfEmptyIcon"><FilePlus2 size={24}/></div><b>No PDF notes yet</b><span>Add textbooks, class notes, manuals, or reference PDFs for this subject.</span><button className="secondary" onClick={()=>fileInputRef.current?.click()}><Upload size={15}/> Add your first PDF</button></div>}<div className="pdfStorageHint"><ShieldCheck size={15}/><span>PDFs are stored securely in this browser for this device. Your subject and task data can still use cloud sync when configured.</span></div></div>}
  </section>
 }
+function taskOccursOnDate(task,dateKey){const start=task.start_date||task.due_date,end=task.end_date||task.due_date;if(!start&&!end)return false;const a=fromDateKey(start||end),b=fromDateKey(end||start),d=fromDateKey(dateKey);return d>=a&&d<=b}
 function Calendar({tasks,subjectMap,setModal}){
  const [view,setView]=useState('today');
  const [selectedDate,setSelectedDate]=useState(localDateKey(new Date()));
@@ -530,7 +715,7 @@ function Calendar({tasks,subjectMap,setModal}){
  const today=localDateKey(new Date());
  const selectDate=(ds)=>setSelectedDate(ds);
  const addForDate=(ds)=>{selectDate(ds);setModal({type:'task',dueDate:ds});};
- const dayTasks=tasks.filter(t=>t.due_date===selectedDate);
+ const dayTasks=tasks.filter(t=>taskOccursOnDate(t,selectedDate));
  const selectedDateObj=fromDateKey(selectedDate);
  const titleDate=selectedDateObj.toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
  const shift=(n)=>{const d=new Date(cursor); if(view==='month') d.setMonth(d.getMonth()+n); else if(view==='year') d.setFullYear(d.getFullYear()+n); setCursor(d)};
@@ -538,17 +723,118 @@ function Calendar({tasks,subjectMap,setModal}){
  const monthLabel=cursor.toLocaleDateString('en',{month:'long',year:'numeric'});
  const yearLabel=String(cursor.getFullYear());
  const renderTask=function(t){const done=t.status==='Done';const timeRange=formatTaskTimeRange(t);return <div className={'event '+(done?'eventDone':'')} style={{borderLeftColor:subjectMap[t.subject_id]?.color||'#8b5cf6'}} key={t.id}><div className="eventTitle">{done?<Check size={11}/>:null}{t.title||'Untitled task'}</div><small>{timeRange?`${timeRange} · `:''}{subjectMap[t.subject_id]?.name||'Unassigned'} · {t.priority}</small></div>};
- const dayCell=(d,opts={})=>{const ds=localDateKey(d);const list=tasks.filter(t=>t.due_date===ds);const isToday=ds===today;const isSelected=ds===selectedDate;const isWeekend=[0,6].includes(d.getDay());return <button type="button" className={'day calendarDayBtn '+(isToday?'today ':'')+(isSelected?'selectedDay ':'')+(isWeekend?'weekend ':'')+(opts.muted?'mutedDay':'')} onClick={()=>selectDate(ds)} key={ds}><div className="dayHead"><div><b>{d.toLocaleDateString('en',{weekday:'short'})}</b><small>{d.toLocaleDateString('en',{month:'short'})}</small></div><strong>{d.getDate()}</strong></div><div className="dayEvents">{list.slice(0,4).map(renderTask)}{list.length>4&&<div className="moreEvents">+{list.length-4} more</div>}{!list.length&&<div className="dayEmpty">No tasks</div>}</div><span className="dayAdd" onClick={(e)=>{e.stopPropagation();addForDate(ds)}}><Plus size={12}/> Add</span></button>};
+ const dayCell=(d,opts={})=>{const ds=localDateKey(d);const list=tasks.filter(t=>taskOccursOnDate(t,ds));const isToday=ds===today;const isSelected=ds===selectedDate;const isWeekend=[0,6].includes(d.getDay());return <button type="button" className={'day calendarDayBtn '+(isToday?'today ':'')+(isSelected?'selectedDay ':'')+(isWeekend?'weekend ':'')+(opts.muted?'mutedDay':'')} onClick={()=>selectDate(ds)} key={ds}><div className="dayHead"><div><b>{d.toLocaleDateString('en',{weekday:'short'})}</b><small>{d.toLocaleDateString('en',{month:'short'})}</small></div><strong>{d.getDate()}</strong></div><div className="dayEvents">{list.slice(0,4).map(renderTask)}{list.length>4&&<div className="moreEvents">+{list.length-4} more</div>}{!list.length&&<div className="dayEmpty">No tasks</div>}</div><span className="dayAdd" onClick={(e)=>{e.stopPropagation();addForDate(ds)}}><Plus size={12}/> Add</span></button>};
  const renderToday=()=>{const d=selectedDateObj;return <div className="calendarSingle"><button type="button" className={'largeDay '+(selectedDate===today?'today':'')} onClick={()=>selectDate(selectedDate)}><div><span className="eyebrow">SELECTED DAY</span><h3>{d.toLocaleDateString('en',{weekday:'long'})}</h3><b>{d.toLocaleDateString('en',{month:'long',day:'numeric',year:'numeric'})}</b></div><div className="largeDayCount">{dayTasks.length}<small>{dayTasks.length===1?'task':'tasks'}</small></div></button></div>};
  const renderThree=()=>{const base=fromDateKey(today);base.setDate(base.getDate()-1);return <div className="threeGrid">{[0,1,2].map(i=>{const d=new Date(base);d.setDate(base.getDate()+i);return dayCell(d)})}</div>};
  const renderMonth=()=>{const y=cursor.getFullYear(),m=cursor.getMonth();const first=new Date(y,m,1);const start=new Date(y,m,1-first.getDay());const cells=Array.from({length:42},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d});return <div className="monthWrap"><div className="weekLabels">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=><span key={x}>{x}</span>)}</div><div className="monthGrid">{cells.map(d=>dayCell(d,{muted:d.getMonth()!==m}))}</div></div>};
- const renderYear=()=>{const y=cursor.getFullYear();return <div className="yearGrid">{Array.from({length:12},(_,m)=>{const first=new Date(y,m,1);const start=new Date(y,m,1-first.getDay());const cells=Array.from({length:42},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d});return <div className="miniMonth" key={m}><div className="miniMonthTitle"><b>{first.toLocaleDateString('en',{month:'long'})}</b><span>{cells.filter(d=>localDateKey(d)===today).length?'Today':''}</span></div><div className="miniWeekLabels">{['S','M','T','W','T','F','S'].map((x,i)=><span key={i}>{x}</span>)}</div><div className="miniMonthGrid">{cells.map(d=>{const ds=localDateKey(d);const list=tasks.filter(t=>t.due_date===ds);const muted=d.getMonth()!==m;const isToday=ds===today;const isSelected=ds===selectedDate;return <button type="button" key={ds} className={'miniDate '+(muted?'muted ':'')+(isToday?'today ':'')+(isSelected?'selected':'')} onClick={()=>selectDate(ds)} title={list.length?`${list.length} task${list.length>1?'s':''}`:'No tasks'}>{d.getDate()}{list.length?<i/>:null}</button>})}</div></div>})}</div>};
+ const renderYear=()=>{const y=cursor.getFullYear();return <div className="yearGrid">{Array.from({length:12},(_,m)=>{const first=new Date(y,m,1);const start=new Date(y,m,1-first.getDay());const cells=Array.from({length:42},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d});return <div className="miniMonth" key={m}><div className="miniMonthTitle"><b>{first.toLocaleDateString('en',{month:'long'})}</b><span>{cells.filter(d=>localDateKey(d)===today).length?'Today':''}</span></div><div className="miniWeekLabels">{['S','M','T','W','T','F','S'].map((x,i)=><span key={i}>{x}</span>)}</div><div className="miniMonthGrid">{cells.map(d=>{const ds=localDateKey(d);const list=tasks.filter(t=>taskOccursOnDate(t,ds));const muted=d.getMonth()!==m;const isToday=ds===today;const isSelected=ds===selectedDate;return <button type="button" key={ds} className={'miniDate '+(muted?'muted ':'')+(isToday?'today ':'')+(isSelected?'selected':'')} onClick={()=>selectDate(ds)} title={list.length?`${list.length} task${list.length>1?'s':''}`:'No tasks'}>{d.getDate()}{list.length?<i/>:null}</button>})}</div></div>})}</div>};
  const views={today:renderToday,three:renderThree,month:renderMonth,year:renderYear};
  return <section className="page"><div className="sectionTop"><div><span className="eyebrow">PLANNING VIEW</span><h1>Calendar</h1><p>Pick a view, select any date, and see or add tasks for that day.</p></div><div className="calendarControls"><div className="calendarTabs">{[['today','Today'],['three','3 Days'],['month','Month'],['year','Year']].map(([id,label])=><button key={id} className={view===id?'active':''} onClick={()=>{setView(id);if(id==='today')resetToday();}}>{label}</button>)}</div><div className="calendarNav"><button className="secondary" onClick={resetToday}>Today</button>{view!=='today'&&view!=='three'&&<><button className="iconbtn navArrow" onClick={()=>shift(-1)} aria-label="Previous">‹</button><span>{view==='month'?monthLabel:yearLabel}</span><button className="iconbtn navArrow" onClick={()=>shift(1)} aria-label="Next">›</button></>}</div></div></div><div className="calendarLegend"><span><i className="legendDot"/>Tasks</span><span><i className="legendRing"/>Today</span><span>{tasks.length} task{tasks.length===1?'':'s'} scheduled</span></div>{views[view]()}<div className="selectedDayPanel panel"><div className="panelHead"><div><span className="eyebrow">SELECTED DATE</span><h2>{titleDate}</h2></div><button className="primary" onClick={()=>addForDate(selectedDate)}><Plus size={16}/> Add task</button></div>{dayTasks.length?<div className="calendarTaskList">{dayTasks.map(renderTask)}</div>:<div className="calendarNoTasks">No tasks scheduled for this date yet.<button className="textBtn" onClick={()=>addForDate(selectedDate)}>Create the first task <ArrowUpRight size={14}/></button></div>}</div></section>
 }
 
 function fromDateKey(key){const [y,m,d]=key.split('-').map(Number);const x=new Date(y,m-1,d);x.setHours(0,0,0,0);return x}
 function formatTaskTimeRange(task){if(!task?.start_time&&!task?.end_time)return '';const fmt=v=>{if(!v)return '';const [h,m]=v.split(':').map(Number);const d=new Date(2000,0,1,h,m);return d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})};return task.start_time&&task.end_time?`${fmt(task.start_time)} – ${fmt(task.end_time)}`:fmt(task.start_time||task.end_time)}
+function Timetable({tasks,onImport,onCancel,onEdit,onEditSeries,onDeleteSeries}){
+ const now=localDateKey(new Date());
+ const classes=tasks.filter(t=>t.timetable_source&&!t.timetable_cancelled&&t.due_date>=now).sort((a,b)=>`${a.due_date} ${a.start_time||''}`.localeCompare(`${b.due_date} ${b.start_time||''}`));
+ const cancelled=tasks.filter(t=>t.timetable_source&&t.timetable_cancelled).sort((a,b)=>(b.due_date||'').localeCompare(a.due_date||'')).slice(0,8);
+ const grouped=classes.slice(0,24).reduce((acc,t)=>{(acc[t.due_date] ||= []).push(t);return acc},{});
+ const next=classes[0];
+ const prettyTime=v=>{if(!v)return '';const [h,m]=v.split(':').map(Number);const d=new Date(2000,0,1,h,m);return d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})};
+ const prettyDate=v=>fromDateKey(v).toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'});
+ return <section className="page timetablePage"><div className="sectionTop"><div><span className="eyebrow">WEEKLY CLASS SCHEDULE</span><h1>Timetable</h1><p>Import your class schedule once, then manage each occurrence as it happens.</p></div><button className="primary" onClick={onImport}><Upload size={16}/> Import timetable</button></div>
+  <div className="timetableHero"><div><span className="eyebrow">NEXT UP</span><h2>{next?.title||'No upcoming classes'}</h2>{next?<p>{prettyDate(next.due_date)} · {prettyTime(next.start_time)} – {prettyTime(next.end_time)}{next.timetable_room?` · ${next.timetable_room}`:''}</p>:<p>Upload a timetable image or CSV to populate your schedule.</p>}</div><div className="timetableStats"><div><strong>{classes.length}</strong><span>upcoming</span></div><div><strong>{cancelled.length}</strong><span>cancelled</span></div></div></div>
+  {classes.length?<div className="timetableGroups">{Object.entries(grouped).map(([date,list])=><div className="timetableDay" key={date}><div className="timetableDayHead"><div><span className="eyebrow">{fromDateKey(date).toLocaleDateString(undefined,{weekday:'short'}).toUpperCase()}</span><b>{prettyDate(date)}</b></div><span>{list.length} class{list.length===1?'':'es'}</span></div><div className="timetableList">{list.map(t=><div className="timetableClass" key={t.id}><div className="classTime"><b>{prettyTime(t.start_time)}</b><span>{prettyTime(t.end_time)}</span></div><div className="classLine"/><div className="classInfo"><b>{t.title||'Untitled class'}</b><small>{t.timetable_room||'Class'}</small></div><div className="timetableActions"><button type="button" className="iconbtn" onClick={()=>onEdit?.(t)} title="Edit this occurrence" aria-label={`Edit ${t.title||'class'}`}><Pencil size={14}/></button><button type="button" className="iconbtn seriesEditIcon" onClick={()=>onEditSeries?.(t)} title="Edit future occurrences" aria-label={`Edit future ${t.title||'class'} occurrences`}><SlidersHorizontal size={14}/></button><button type="button" className="iconbtn dangerIcon seriesDeleteIcon" onClick={()=>onDeleteSeries?.(t)} title="Delete all occurrences of this class" aria-label={`Delete all ${t.title||'class'} occurrences`}><Trash2 size={14}/></button><button type="button" className="secondary cancelClassBtn" onClick={()=>onCancel(t)}><X size={14}/><span>Cancel</span></button></div></div>)}</div></div>)}</div>:<div className="panel timetableEmpty"><CalendarClock size={24}/><div><b>Your timetable is empty</b><p>Upload a timetable and ORBIT will generate recurring class occurrences for the selected term.</p></div><button className="secondary" onClick={onImport}><Upload size={15}/> Import schedule</button></div>}
+  {cancelled.length>0&&<div className="panel cancelledClasses"><div className="panelHead"><div><span className="eyebrow">LAST-MINUTE CHANGES</span><h2>Cancelled classes</h2></div><span className="notesSaved">Cancellation only affects that occurrence.</span></div>{cancelled.map(t=><div className="cancelledClass" key={t.id}><div><b>{t.title}</b><span>{prettyDate(t.due_date)} · {prettyTime(t.start_time)} – {prettyTime(t.end_time)}</span></div><button className="secondary" onClick={()=>onCancel(t)}>Restore</button></div>)}</div>}
+ </section>
+}
+
+function groupTimetableEntries(rows){
+ const groups=[]; const map=new Map();
+ for(const row of rows||[]){
+  const key=`${row.title||''}|${row.room||''}|${row.start_date||''}|${row.end_date||''}`.toLowerCase();
+  let group=map.get(key);
+  if(!group){group={title:row.title||'',room:row.room||'',start_date:row.start_date||'',end_date:row.end_date||'',slots:[]};map.set(key,group);groups.push(group)}
+  if(row.weekday!=null&&row.start_time&&row.end_time)group.slots.push({weekday:row.weekday,start_time:row.start_time,end_time:row.end_time});
+ }
+ return groups;
+}
+
+function TimetableSeriesEditModal({task,onClose,onSave}){
+ const today=localDateKey(new Date());
+ const [v,setV]=useState({title:task.title||'',room:task.timetable_room||'',effective_date:today,start_time:task.start_time||'',end_time:task.end_time||''});
+ const [saving,setSaving]=useState(false);
+ const submit=async()=>{if(!v.title.trim()){alert('Class name is required.');return}if(!v.start_time||!v.end_time){alert('Select both start and end time.');return}setSaving(true);try{await onSave(task,v)}finally{setSaving(false)}};
+ return <Modal title="Edit class schedule" onClose={onClose} className="timetableSeriesModal">
+  <div className="seriesIntro"><span className="seriesIcon"><SlidersHorizontal size={17}/></span><div><b>Update future classes together</b><p>Change the recurring class once instead of editing every occurrence individually.</p></div></div>
+  <div className="seriesFields">
+   <label className="seriesWide"><span>Class / subject</span><input value={v.title} onChange={e=>setV(x=>({...x,title:e.target.value}))} placeholder="Class / subject"/></label>
+   <label><span>Room</span><input value={v.room} onChange={e=>setV(x=>({...x,room:e.target.value}))} placeholder="Optional"/></label>
+   <label><span>Apply changes from</span><input type="date" value={v.effective_date} min={today} onChange={e=>setV(x=>({...x,effective_date:e.target.value}))}/></label>
+   <div className="seriesTime"><span>New time</span><div><TimeField value={v.start_time} onChange={x=>setV(y=>({...y,start_time:x}))} label="Start"/><span className="seriesTimeArrow">→</span><TimeField value={v.end_time} onChange={x=>setV(y=>({...y,end_time:x}))} label="End"/></div></div>
+  </div>
+  <div className="seriesNote"><SlidersHorizontal size={14}/><span>Past occurrences stay unchanged. Future occurrences from the selected date are updated together and linked Google Calendar events are refreshed.</span></div>
+  <div className="seriesActions"><button type="button" className="secondary seriesCancelBtn" onClick={onClose}><X size={15}/><span>Cancel</span></button><button type="button" className="primary seriesSaveBtn" onClick={submit} disabled={saving}><Check size={15}/><span>{saving?'Updating…':'Update future classes'}</span></button></div>
+ </Modal>
+}
+
+function TimetableImportModal({onClose,onImport}){
+ const today=localDateKey(new Date()); const endDefault=(()=>{const d=fromDateKey(today);d.setDate(d.getDate()+TIMETABLE_WEEKS*7);return localDateKey(d)})();
+ const [entries,setEntries]=useState([]); const [startDate,setStartDate]=useState(today); const [endDate,setEndDate]=useState(endDefault); const [busy,setBusy]=useState(false); const [message,setMessage]=useState(''); const [ocrText,setOcrText]=useState(''); const [dragging,setDragging]=useState(false);
+ const update=(i,key,value)=>setEntries(xs=>xs.map((x,n)=>n===i?{...x,[key]:value}:x));
+ const updateSlot=(i,si,key,value)=>setEntries(xs=>xs.map((x,n)=>n!==i?x:{...x,slots:x.slots.map((slot,j)=>j===si?{...slot,[key]:value}:slot)}));
+ const addSlot=i=>setEntries(xs=>xs.map((x,n)=>n===i?{...x,slots:[...x.slots,{weekday:1,start_time:'09:00',end_time:'10:00'}]}:x));
+ const removeSlot=(i,si)=>setEntries(xs=>xs.map((x,n)=>n===i?{...x,slots:x.slots.filter((_,j)=>j!==si)}:x));
+ const addRow=()=>setEntries(xs=>[...xs,{title:'New class',room:'',start_date:startDate,end_date:endDate,slots:[{weekday:1,start_time:'09:00',end_time:'10:00'}],source:'manual'}]);
+ const removeRow=i=>setEntries(xs=>xs.filter((_,n)=>n!==i));
+ const processFile=async file=>{if(!file)return;setBusy(true);setMessage('');try{
+   const lower=file.name.toLowerCase(); let parsed=[];
+   if(lower.endsWith('.csv')||file.type==='text/csv'){
+    const text=await file.text(); parsed=parseTimetableCsv(text).map(x=>({...x,start_date:startDate,end_date:endDate}));setOcrText(text);setMessage(parsed.length?`Detected ${parsed.length} schedule row${parsed.length===1?'':'s'}. Review before importing.`:'No rows matched. Check the CSV format.');
+   }else{
+    const T=await loadTesseract();let text='';
+    if(lower.endsWith('.pdf')||file.type==='application/pdf'){const result=await ocrPdfFile(file,T);text=result.text;parsed=result.rows;setMessage(parsed.length?`Detected ${parsed.length} possible class${parsed.length===1?'':'es'} from the PDF. Review and remove anything that does not belong to you.`:'No classes were confidently detected from the PDF. Try a clearer file or add classes manually.')} 
+    else{const result=await recognizeTimetableImage(file,T);text=result.text;parsed=result.rows;setMessage(parsed.length?`Detected ${parsed.length} possible class${parsed.length===1?'':'es'}. Review and remove anything that does not belong to you.`:'No classes were confidently detected. Try a clearer scan or add classes manually.')}
+    parsed=parsed.map(x=>({...x,start_date:startDate,end_date:endDate}));setOcrText(text);
+   }
+   setEntries(groupTimetableEntries(parsed));
+  }catch(err){setMessage(err?.message||'Could not read that timetable file.')}finally{setBusy(false)}};
+ const fileChange=e=>{const file=e.target.files?.[0];processFile(file);e.target.value=''};
+ const drop=e=>{e.preventDefault();setDragging(false);processFile(e.dataTransfer.files?.[0])};
+ const submit=()=>{
+  if(!entries.length){setMessage('Add at least one class before importing.');return}
+  if(!startDate||!endDate||startDate>endDate){setMessage('Choose a valid overall schedule range.');return}
+  const clean=[];
+  for(const entry of entries){
+   if(!entry.title?.trim()){setMessage('Every class needs a name.');return}
+   const sd=entry.start_date||startDate,ed=entry.end_date||endDate;
+   if(!sd||!ed||sd>ed){setMessage(`Check the date range for “${entry.title}”.`);return}
+   if(!entry.slots?.length){setMessage(`Add at least one day/time for “${entry.title}”.`);return}
+   for(const slot of entry.slots){if(slot.weekday==null||!slot.start_time||!slot.end_time){setMessage(`Complete every day and time for “${entry.title}”.`);return}clean.push({...entry,weekday:Number(slot.weekday),start_time:slot.start_time,end_time:slot.end_time,start_date:sd,end_date:ed})}
+  }
+  onImport(clean,startDate,endDate)
+ };
+ return <Modal title="Import timetable" onClose={onClose} className="timetableImportModal">
+  <div className="timetableUpload">
+   <input id="timetable-file" className="hiddenFileInput" type="file" accept="image/png,image/jpeg,image/webp,application/pdf,.csv,text/csv" onChange={fileChange}/>
+   <label htmlFor="timetable-file" className={'uploadDrop '+(dragging?'isDragging':'')} onDragOver={e=>{e.preventDefault();setDragging(true)}} onDragEnter={e=>{e.preventDefault();setDragging(true)}} onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDragging(false)}} onDrop={drop}>
+    <span className="uploadIcon"><Upload size={22}/></span><span className="uploadCopy"><b>{busy?'Reading timetable…':'Drop your timetable here'}</b><small>or choose a file · PNG, JPG, WEBP, PDF, CSV</small></span><span className="uploadAction">Choose file</span>
+   </label>
+  </div>
+  <div className="termGrid"><label>Overall schedule starts<input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}/></label><label>Overall schedule ends<input type="date" value={endDate} min={startDate} onChange={e=>setEndDate(e.target.value)}/></label></div>
+  {message&&<div className="importMessage">{message}</div>}
+  <div className="importHeader"><div><span className="eyebrow">SCHEDULE ENTRIES</span><b>{entries.length} class{entries.length===1?'':'es'}</b></div><button type="button" className="secondary addClassBtn" onClick={addRow}><Plus size={14}/> Add class</button></div>
+  {entries.length?<div className="importRows">{entries.map((e,i)=><div className="importCard" key={i}>
+    <div className="importCardTop"><div className="importCardTitle"><span className="classIndex">{String(i+1).padStart(2,'0')}</span><div><input className="classTitleInput" value={e.title||''} onChange={x=>update(i,'title',x.target.value)} placeholder="Class / subject"/><input className="classRoomInput" value={e.room||''} onChange={x=>update(i,'room',x.target.value)} placeholder="Room (optional)"/></div></div><button type="button" className="iconbtn dangerIcon" onClick={()=>removeRow(i)} title="Remove class"><Trash2 size={15}/></button></div>
+    <div className="importSlots">{(e.slots||[]).map((slot,si)=><div className="importSlot" key={si}><div className="slotDay"><Dropdown value={WEEKDAYS[slot.weekday]||'Monday'} onChange={name=>updateSlot(i,si,'weekday',WEEKDAYS.indexOf(name))} options={WEEKDAYS} ariaLabel={`Day ${si+1} for ${e.title||'class'}`} className="timetableDayDropdown"/></div><TimeField value={slot.start_time||''} onChange={v=>updateSlot(i,si,'start_time',v)} label="Start"/><TimeField value={slot.end_time||''} onChange={v=>updateSlot(i,si,'end_time',v)} label="End"/><button type="button" className="iconbtn subtleDelete" onClick={()=>removeSlot(i,si)} disabled={(e.slots||[]).length===1} title="Remove day"><X size={15}/></button></div>)}</div>
+    <button type="button" className="addDayBtn" onClick={()=>addSlot(i)}><Plus size={14}/> Add another day / time</button>
+    <div className="importDates"><label>Class starts<input type="date" value={e.start_date||startDate} min={startDate} max={e.end_date||endDate} onChange={x=>update(i,'start_date',x.target.value)}/></label><span className="dateArrow">→</span><label>Class ends<input type="date" value={e.end_date||endDate} min={e.start_date||startDate} onChange={x=>update(i,'end_date',x.target.value)}/></label></div>
+   </div>)}</div>:<div className="importEmpty"><FileText size={18}/><span>No classes yet. Drop a timetable above or add a class manually.</span></div>}
+  {ocrText&&<details className="ocrDetails"><summary>View extracted text</summary><textarea value={ocrText} onChange={e=>setOcrText(e.target.value)} placeholder="OCR text"/></details>}
+  <button className="primary full importScheduleBtn" onClick={submit} disabled={busy||!entries.length}><CalendarClock size={16}/> Add to schedule</button>
+ </Modal>
+}
+
 function Focus({timer,running,setRunning,setTimer,onLogSession,focusMode,setFocusMode,pomodoros,setPomodoros,customMinutes,setCustomMinutes}){
  const mm=String(Math.floor(timer/60)).padStart(2,'0'),ss=String(timer%60).padStart(2,'0');
  const setPreset=(minutes,mode='pomodoro',count=1)=>{setRunning(false);setFocusMode(mode);if(mode==='pomodoro')setPomodoros(count);setTimer(minutes*60)};
@@ -586,5 +872,5 @@ function AuthModal({cloudReady,onClose,onGoogle}){
 }
 
 
-function Modal({title,onClose,children}){return <div className="overlay" onMouseDown={onClose}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modalHead"><h2>{title}</h2><button className="iconbtn" onClick={onClose}><X/></button></div>{children}</div></div>}
+function Modal({title,onClose,children,className=""}){return <div className="overlay" onMouseDown={onClose}><div className={`modal ${className}`.trim()} onMouseDown={e=>e.stopPropagation()}><div className="modalHead"><h2>{title}</h2><button className="iconbtn" onClick={onClose}><X/></button></div>{children}</div></div>}
 createRoot(document.getElementById('root')).render(<App/>);
