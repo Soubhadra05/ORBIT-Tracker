@@ -13,7 +13,7 @@ A responsive React/Vite productivity workspace with a calm, Vercel-inspired blac
 - Focus timer with 1/2/3 Pomodoro presets, custom duration, completion sound and manual session logging
 - Settings for theme, density, notifications, focus preferences, account and privacy/sync
 - Local demo mode works immediately without a backend
-- Optional Google login + phone OTP + Supabase cloud sync
+- Optional Google login + Supabase cloud sync
 - Custom subject categories with local persistence; cloud schema accepts any category
 
 ## Run locally
