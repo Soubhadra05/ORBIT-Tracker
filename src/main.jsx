@@ -44,9 +44,61 @@ function playCompletionSound(){
 function formatDashboardDate(date=new Date()){return date.toLocaleDateString(undefined,{weekday:'long',day:'2-digit',month:'short',year:'numeric'}).toUpperCase().replace(',', ' ·')}
 function localDateKey(date=new Date()){const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,'0');const d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}`}
 
+const GOOGLE_CALENDAR_SCOPE='https://www.googleapis.com/auth/calendar.events';
+function nextDateKey(dateKey){const d=fromDateKey(dateKey);d.setDate(d.getDate()+1);return localDateKey(d)}
+function timeToMinutes(value){if(!value)return null;const [h,m]=String(value).split(':').map(Number);if(!Number.isFinite(h)||!Number.isFinite(m))return null;return h*60+m}
+function durationMinutes(startDate,startTime,endDate,endTime){if(!startDate||!endDate||!startTime||!endTime)return null;const a=new Date(`${startDate}T${startTime}:00`),b=new Date(`${endDate}T${endTime}:00`);const diff=Math.round((b-a)/60000);return Number.isFinite(diff)&&diff>0?diff:null}
+function browserTimeZone(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}}
+function calendarEventPayload(task,subjectName){
+ const description=[`ORBIT Tracker task`,subjectName?`Subject: ${subjectName}`:null,task.notes||null,task.priority?`Priority: ${task.priority}`:null].filter(Boolean).join('\n');
+ const startDate=task.start_date||task.due_date;
+ const endDate=task.end_date||task.due_date;
+ const hasTimed=Boolean(startDate&&endDate&&task.start_time&&task.end_time&&durationMinutes(startDate,task.start_time,endDate,task.end_time));
+ if(hasTimed){
+  const tz=browserTimeZone();
+  return {summary:task.title?.trim()||'ORBIT Task',description,start:{dateTime:`${startDate}T${task.start_time}:00`,timeZone:tz},end:{dateTime:`${endDate}T${task.end_time}:00`,timeZone:tz},transparency:'opaque'};
+ }
+ return {summary:task.title?.trim()||'ORBIT Task',description,start:{date:startDate},end:{date:nextDateKey(endDate)},transparency:'opaque'};
+}
+async function googleCalendarRequest(accessToken,path,options={}){
+ const response=await fetch(`https://www.googleapis.com/calendar/v3${path}`,{...options,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});
+ if(!response.ok){let message='Google Calendar request failed.';try{const body=await response.json();message=body?.error?.message||message}catch{}const error=new Error(message);error.status=response.status;throw error}
+ if(response.status===204)return null;
+ return response.json();
+}
+async function createGoogleCalendarEvent(accessToken,task,subjectName){
+ if(!accessToken||!task?.due_date)return null;
+ const eventId=`orbit${String(task.id||uid()).replace(/-/g,'')}`.slice(0,1024);
+ const event={id:eventId,...calendarEventPayload(task,subjectName)};
+ return googleCalendarRequest(accessToken,'/calendars/primary/events',{method:'POST',body:JSON.stringify(event)});
+}
+async function updateGoogleCalendarEvent(accessToken,eventId,task,subjectName){
+ if(!accessToken||!eventId)return null;
+ if(!task?.due_date)return googleCalendarRequest(accessToken,`/calendars/primary/events/${encodeURIComponent(eventId)}`,{method:'DELETE'});
+ const event=calendarEventPayload(task,subjectName);
+ return googleCalendarRequest(accessToken,`/calendars/primary/events/${encodeURIComponent(eventId)}`,{method:'PATCH',body:JSON.stringify(event)});
+}
+async function deleteGoogleCalendarEvent(accessToken,eventId){
+ if(!accessToken||!eventId)return;
+ return googleCalendarRequest(accessToken,`/calendars/primary/events/${encodeURIComponent(eventId)}`,{method:'DELETE'});
+}
+async function syncTaskToGoogleCalendar(accessToken,task,subjectName){
+ if(!accessToken||!task)return task;
+ if(!task.due_date){
+  if(task.google_event_id) await deleteGoogleCalendarEvent(accessToken,task.google_event_id).catch(error=>{if(error.status!==404)throw error});
+  return task.google_event_id?{...task,google_event_id:null}:task;
+ }
+ if(task.google_event_id){
+  try{await updateGoogleCalendarEvent(accessToken,task.google_event_id,task,subjectName);return task}
+  catch(error){if(error.status!==404)throw error}
+ }
+ const event=await createGoogleCalendarEvent(accessToken,task,subjectName);
+ return event?.id?{...task,google_event_id:event.id}:task;
+}
+
 function App(){
  const [user,setUser]=useState(null);
- const [theme,setTheme]=useState(()=>localStorage.getItem('orbit_theme')||'dark'); const [density,setDensity]=useState(()=>localStorage.getItem('orbit_density')||'Comfortable'); const [subjects,setSubjects]=useState([]); const [tasks,setTasks]=useState([]); const [sessions,setSessions]=useState([]); const [tab,setTab]=useState('Dashboard'); const [search,setSearch]=useState(''); const [filter,setFilter]=useState('All'); const [modal,setModal]=useState(null); const [mobile,setMobile]=useState(false); const [timer,setTimer]=useState(()=>Number(localStorage.getItem('orbit_default_focus')||25)*60); const [running,setRunning]=useState(false); const [focusMode,setFocusMode]=useState('pomodoro'); const [pomodoros,setPomodoros]=useState(1); const [customMinutes,setCustomMinutes]=useState(30); const [profileOpen,setProfileOpen]=useState(false); const [searchOpen,setSearchOpen]=useState(false); const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>localStorage.getItem('orbit_sidebar_collapsed')==='1'); const [selectedSubject,setSelectedSubject]=useState(null); const [settingsPanel,setSettingsPanel]=useState(null); const [sessionModal,setSessionModal]=useState(false); const [subjectEdit,setSubjectEdit]=useState(null); const [authModal,setAuthModal]=useState(false);
+ const [theme,setTheme]=useState(()=>localStorage.getItem('orbit_theme')||'dark'); const [density,setDensity]=useState(()=>localStorage.getItem('orbit_density')||'Comfortable'); const [subjects,setSubjects]=useState([]); const [tasks,setTasks]=useState([]); const [sessions,setSessions]=useState([]); const [tab,setTab]=useState('Dashboard'); const [search,setSearch]=useState(''); const [filter,setFilter]=useState('All'); const [modal,setModal]=useState(null); const [mobile,setMobile]=useState(false); const [timer,setTimer]=useState(()=>Number(localStorage.getItem('orbit_default_focus')||25)*60); const [running,setRunning]=useState(false); const [focusMode,setFocusMode]=useState('pomodoro'); const [pomodoros,setPomodoros]=useState(1); const [customMinutes,setCustomMinutes]=useState(30); const [profileOpen,setProfileOpen]=useState(false); const [searchOpen,setSearchOpen]=useState(false); const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>localStorage.getItem('orbit_sidebar_collapsed')==='1'); const [selectedSubject,setSelectedSubject]=useState(null); const [settingsPanel,setSettingsPanel]=useState(null); const [sessionModal,setSessionModal]=useState(false); const [subjectEdit,setSubjectEdit]=useState(null); const [authModal,setAuthModal]=useState(false); const [googleProviderToken,setGoogleProviderToken]=useState(null);
  useEffect(()=>{
   const root=document.documentElement;
   const apply=()=>{
@@ -61,7 +113,11 @@ function App(){
   localStorage.setItem('orbit_theme',theme);
   return()=>media?.removeEventListener?.('change',onChange);
  },[theme]);
- useEffect(()=>{ if(cloudReady){supabase.auth.getSession().then(({data})=>{const nextUser=data.session?.user||null;setUser(nextUser);if(nextUser){setAuthModal(false);setSettingsPanel(null)}}); const {data:sub}=supabase.auth.onAuthStateChange((_e,s)=>{const nextUser=s?.user||null;setUser(nextUser);if(nextUser){setAuthModal(false);setSettingsPanel(null)}}); return()=>sub.subscription.unsubscribe()} else {setSubjects(JSON.parse(localStorage.getItem('orbit_subjects')||'null')||seedSubjects);setTasks(JSON.parse(localStorage.getItem('orbit_tasks')||'null')||seedTasks);setSessions(JSON.parse(localStorage.getItem('orbit_sessions')||'[]'))}},[]);
+ useEffect(()=>{ if(cloudReady){
+  supabase.auth.getSession().then(({data})=>{const session=data.session||null;const nextUser=session?.user||null;const token=session?.provider_token||sessionStorage.getItem('orbit_google_provider_token')||null;setUser(nextUser);setGoogleProviderToken(token);if(nextUser){setAuthModal(false);setSettingsPanel(null)}});
+  const {data:sub}=supabase.auth.onAuthStateChange((_e,s)=>{const nextUser=s?.user||null;const token=s?.provider_token||null;setUser(nextUser);setGoogleProviderToken(token);if(token)sessionStorage.setItem('orbit_google_provider_token',token);if(_e==='SIGNED_OUT')sessionStorage.removeItem('orbit_google_provider_token');if(nextUser){setAuthModal(false);setSettingsPanel(null)}});
+  return()=>sub.subscription.unsubscribe()
+ } else {setSubjects(JSON.parse(localStorage.getItem('orbit_subjects')||'null')||seedSubjects);setTasks(JSON.parse(localStorage.getItem('orbit_tasks')||'null')||seedTasks);setSessions(JSON.parse(localStorage.getItem('orbit_sessions')||'[]'))}},[]);
  useEffect(()=>{if(!cloudReady){localStorage.setItem('orbit_subjects',JSON.stringify(subjects));localStorage.setItem('orbit_tasks',JSON.stringify(tasks));localStorage.setItem('orbit_sessions',JSON.stringify(sessions))}},[subjects,tasks,sessions]);
  const completionArmed=useRef(false);
  useEffect(()=>{
@@ -87,21 +143,132 @@ function App(){
   return()=>document.removeEventListener('mousedown',closeHeaderPopups);
  },[]);
  useEffect(()=>{if(user)loadCloud()},[user]);
+ useEffect(()=>{if(user&&googleProviderToken&&tasks.length)syncExistingTasksToCalendar()},[googleProviderToken]);
  useEffect(()=>{ if(selectedSubject && !subjects.some(s=>s.id===selectedSubject)) setSelectedSubject(null)},[subjects,selectedSubject]);
  async function loadCloud(){const [{data:s},{data:t},{data:ss}]=await Promise.all([supabase.from('subjects').select('*').order('created_at'),supabase.from('tasks').select('*').order('created_at',{ascending:false}),supabase.from('study_sessions').select('*').order('session_date',{ascending:false})]);setSubjects(s||[]);setTasks(t||[]);setSessions(ss||[])}
+ async function syncExistingTasksToCalendar(){
+  if(!googleProviderToken||!user||!tasks.length)return;
+  const map=Object.fromEntries(subjects.map(s=>[s.id,s]));
+  let changed=false; const nextTasks=[];
+  for(const task of tasks){
+   if(!task.due_date){nextTasks.push(task);continue}
+   try{
+    const synced=await syncTaskToGoogleCalendar(googleProviderToken,task,map[task.subject_id]?.name);
+    if(synced.google_event_id!==task.google_event_id){
+     const {data,error}=await supabase.from('tasks').update({google_event_id:synced.google_event_id||null}).eq('id',task.id).select().single();
+     if(!error&&data){nextTasks.push(data);changed=true}else nextTasks.push(synced);
+    }else nextTasks.push(task);
+   }catch(error){
+    nextTasks.push(task);
+    if(error.status===401||error.status===403){console.warn('Google Calendar access issue:',error.message);break}
+    console.warn('Google Calendar sync failed:',error);
+   }
+  }
+  if(changed)setTasks(nextTasks);
+ }
  async function login(){setSettingsPanel(null);setAuthModal(true)}
- async function loginGoogle(){if(!cloudReady){alert('Cloud sign-in needs Supabase setup. Add your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first.');return}const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});if(error)alert(`Google sign-in failed. ${error.message}`);else setAuthModal(false)}
- async function loginPhone(phone){if(!cloudReady){throw new Error('Phone OTP needs Supabase setup. Add your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first.')}const {error}=await supabase.auth.signInWithOtp({phone,options:{shouldCreateUser:true}});if(error)throw error}
- async function verifyPhone(phone,token){if(!cloudReady)throw new Error('Supabase is not configured.');const {error}=await supabase.auth.verifyOtp({phone,token,type:'sms'});if(error)throw error;setAuthModal(false)}
+ async function loginGoogle(){if(!cloudReady){alert('Cloud sign-in needs Supabase setup. Add your Supabase URL and publishable key first.');return}const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin,scopes:GOOGLE_CALENDAR_SCOPE,queryParams:{access_type:'offline',prompt:'consent'}}});if(error)alert(`Google sign-in failed. ${error.message}`);else setAuthModal(false)}
  async function logout(){if(supabase)await supabase.auth.signOut();setUser(null);setProfileOpen(false);setSettingsPanel(null)}
  async function saveSubject(v){const row={...v,user_id:user?.id,notes:v.notes||''};if(cloudReady&&user){const {data}=await supabase.from('subjects').insert(row).select().single();if(data)setSubjects(x=>[...x,data])}else setSubjects(x=>[...x,{...v,id:uid()}]);setModal(null)}
  async function updateSubject(subject,v){const changes={name:v.name.trim(),code:v.code.trim(),category:v.category,color:v.color,target_hours:Number(v.target_hours)||0,notes:v.notes||''};if(cloudReady&&user){const {data,error}=await supabase.from('subjects').update(changes).eq('id',subject.id).select().single();if(error){alert(`Could not update subject. ${error.message}`);return false}setSubjects(x=>x.map(s=>s.id===subject.id?{...s,...data}:s))}else setSubjects(x=>x.map(s=>s.id===subject.id?{...s,...changes}:s));setSubjectEdit(null);return true}
- async function saveTask(v){const isEdit=Boolean(v.id);const row={...v,user_id:user?.id,tags:v.tags||[]};if(isEdit)delete row.id;if(cloudReady&&user){if(isEdit){const {data,error}=await supabase.from('tasks').update(row).eq('id',v.id).select().single();if(error){alert(`Could not update task. ${error.message}`);return}if(data)setTasks(x=>x.map(t=>t.id===v.id?data:t))}else{const {data,error}=await supabase.from('tasks').insert(row).select().single();if(error){alert(`Could not create task. ${error.message}`);return}if(data)setTasks(x=>[data,...x])}}else if(isEdit){setTasks(x=>x.map(t=>t.id===v.id?{...t,...v}:t))}else setTasks(x=>[{...v,id:uid()},...x]);setModal(null)}
- async function toggleTask(t){const status=t.status==='Done'?'Todo':'Done';if(cloudReady&&user)await supabase.from('tasks').update({status,completed_at:status==='Done'?new Date().toISOString():null}).eq('id',t.id);setTasks(x=>x.map(a=>a.id===t.id?{...a,status}:a))}
- async function updateTask(t,changes){const next={...t,...changes};if(cloudReady&&user){const payload={};for(const key of ['subject_id','due_date','priority','estimated_minutes']) if(key in changes) payload[key]=changes[key];await supabase.from('tasks').update(payload).eq('id',t.id)}setTasks(x=>x.map(a=>a.id===t.id?next:a))}
+ async function saveTask(v){
+  const isEdit=Boolean(v.id);
+  const title=(v.title||'').trim();
+  const startDate=v.start_date||v.due_date||null;
+  const endDate=v.end_date||v.due_date||startDate;
+  const autoMinutes=durationMinutes(startDate,v.start_time,endDate,v.end_time);
+  if(v.start_time&&v.end_time&&(!startDate||!endDate||!autoMinutes)){alert('End date/time must be after the start date/time.');return}
+  const normalized={
+    ...v,title,subject_id:v.subject_id||null,due_date:endDate||null,start_date:startDate||null,end_date:endDate||null,start_time:v.start_time||null,end_time:v.end_time||null,
+    priority:v.priority||'Medium',status:v.status||'Todo',estimated_minutes:autoMinutes??(v.estimated_minutes===''||v.estimated_minutes==null?null:Number(v.estimated_minutes)||null),
+    notes:v.notes||'',tags:Array.isArray(v.tags)?v.tags:[]
+  };
+  const row={user_id:user?.id,title:normalized.title||null,priority:normalized.priority,status:normalized.status,notes:normalized.notes,tags:normalized.tags,subject_id:normalized.subject_id,due_date:normalized.due_date,start_date:normalized.start_date,end_date:normalized.end_date,start_time:normalized.start_time,end_time:normalized.end_time,estimated_minutes:normalized.estimated_minutes};
+  if(isEdit)delete row.user_id;
+  if(cloudReady&&user){
+    const result=isEdit?await supabase.from('tasks').update(row).eq('id',v.id).select().single():await supabase.from('tasks').insert(row).select().single();
+    if(result.error){alert(`${isEdit?'Could not update task':'Could not create task'}. ${result.error.message}`);return}
+    let synced=result.data;
+    if(googleProviderToken){
+      try{
+        synced=await syncTaskToGoogleCalendar(googleProviderToken,synced,subjectMap[synced.subject_id]?.name);
+        if(synced.google_event_id!==(result.data.google_event_id||null)){
+          const eventUpdate=await supabase.from('tasks').update({google_event_id:synced.google_event_id||null}).eq('id',synced.id).select().single();
+          if(!eventUpdate.error&&eventUpdate.data)synced=eventUpdate.data;
+        }
+      }catch(calendarError){
+        if(calendarError.status===401)alert('Task saved, but Google Calendar access has expired. Sign out and sign in with Google again to reconnect Calendar.');
+        else if(calendarError.status===403)alert('Task saved, but Google Calendar denied access. Make sure Google Calendar API is enabled and Calendar permission was accepted, then sign out and sign in again.');
+        else alert(`Task saved, but Google Calendar sync failed. ${calendarError.message||'Check the browser console for details.'}`)
+      }
+    }else if(synced.due_date){
+      alert('Task saved, but Google Calendar is not connected. Sign out and sign in with Google again to connect Calendar.');
+    }
+    setTasks(x=>isEdit?x.map(t=>t.id===v.id?synced:t):[synced,...x]);
+  }else if(isEdit)setTasks(x=>x.map(t=>t.id===v.id?{...t,...normalized}:t));
+  else setTasks(x=>[{...normalized,id:uid()},...x]);
+  setModal(null)
+ }
+ async function toggleTask(t){
+  const status=t.status==='Done'?'Todo':'Done';
+  const completed_at=status==='Done'?new Date().toISOString():null;
+  if(cloudReady&&user){
+    const {data,error}=await supabase.from('tasks').update({status,completed_at}).eq('id',t.id).select().single();
+    if(error){alert(`Could not update task. ${error.message}`);return}
+    let synced=data||{...t,status,completed_at};
+    if(googleProviderToken){
+      try{
+        synced=await syncTaskToGoogleCalendar(googleProviderToken,synced,subjectMap[synced.subject_id]?.name);
+        if(synced.google_event_id!==(data?.google_event_id||null)){
+          const eventUpdate=await supabase.from('tasks').update({google_event_id:synced.google_event_id||null}).eq('id',t.id).select().single();
+          if(!eventUpdate.error&&eventUpdate.data)synced=eventUpdate.data;
+        }
+      }catch(e){
+        if(e.status===401)alert('Task updated, but Google Calendar access has expired. Sign out and sign in with Google again to reconnect Calendar.');
+        else console.warn('Google Calendar sync failed:',e);
+      }
+    }
+    setTasks(x=>x.map(a=>a.id===t.id?synced:a));
+    return;
+  }
+  setTasks(x=>x.map(a=>a.id===t.id?{...a,status,completed_at}:a));
+ }
+ async function updateTask(t,changes){
+  const next={...t,...changes,due_date:('due_date' in changes?(changes.due_date||null):t.due_date),start_date:('start_date' in changes?(changes.start_date||null):t.start_date||t.due_date),end_date:('end_date' in changes?(changes.end_date||null):t.end_date||t.due_date),subject_id:('subject_id' in changes?(changes.subject_id||null):t.subject_id),start_time:('start_time' in changes?(changes.start_time||null):t.start_time),end_time:('end_time' in changes?(changes.end_time||null):t.end_time)};
+  if('start_date' in changes&&!('end_date' in changes))next.end_date=next.end_date||next.start_date;
+  if('end_date' in changes&&!('start_date' in changes))next.start_date=next.start_date||next.end_date;
+  next.due_date=next.end_date||next.due_date||null;
+  const autoMinutes=durationMinutes(next.start_date,next.start_time,next.end_date,next.end_time);
+  if(next.start_time&&next.end_time&&(!next.start_date||!next.end_date||!autoMinutes)){alert('End date/time must be after the start date/time.');return}
+  if(autoMinutes!=null)next.estimated_minutes=autoMinutes;
+  if(cloudReady&&user){
+    const payload={};
+    for(const key of ['subject_id','due_date','start_date','end_date','priority','estimated_minutes','start_time','end_time']) if(key in changes||key==='start_time'||key==='end_time'&&('start_time' in changes||'end_time' in changes)) payload[key]=next[key]===''||next[key]===undefined?null:next[key];
+    const {data,error}=await supabase.from('tasks').update(payload).eq('id',t.id).select().single();
+    if(error){alert(`Could not update task. ${error.message}`);return}
+    let synced=data||next;
+    if(googleProviderToken){
+      try{
+        synced=await syncTaskToGoogleCalendar(googleProviderToken,synced,subjectMap[synced.subject_id]?.name);
+        if(synced.google_event_id!==(data?.google_event_id||null)){
+          const eventUpdate=await supabase.from('tasks').update({google_event_id:synced.google_event_id||null}).eq('id',t.id).select().single();
+          if(!eventUpdate.error&&eventUpdate.data)synced=eventUpdate.data;
+        }
+      }catch(e){if(e.status===401)alert('Task updated, but Google Calendar access has expired. Sign out and sign in with Google again to reconnect Calendar.');else console.warn('Google Calendar sync failed:',e)}
+    }
+    setTasks(x=>x.map(a=>a.id===t.id?synced:a));return
+  }
+  setTasks(x=>x.map(a=>a.id===t.id?next:a))
+ }
  async function deleteTask(t){
-  if(!window.confirm(`Delete “${t.title}”? This cannot be undone.`)) return;
-  if(cloudReady&&user){const {error}=await supabase.from('tasks').delete().eq('id',t.id);if(error){alert(`Could not delete task. ${error.message}`);return}}
+  if(!window.confirm(`Delete “${t.title||'Untitled task'}”? This cannot be undone.`)) return;
+  if(cloudReady&&user){
+    if(t.google_event_id){
+      if(!googleProviderToken){alert('This task is linked to Google Calendar, but Calendar access is not connected. Sign out and sign in with Google again, then delete the task.');return}
+      try{await deleteGoogleCalendarEvent(googleProviderToken,t.google_event_id)}catch(e){if(e.status!==404){if(e.status===401)alert('Google Calendar access has expired. Sign out and sign in with Google again, then delete the task.');else alert(`Could not remove the task from Google Calendar. ${e.message||'Please try again.'}`);return}}
+    }
+    const {error}=await supabase.from('tasks').delete().eq('id',t.id);if(error){alert(`Could not delete task. ${error.message}`);return}
+  }
   setTasks(x=>x.filter(a=>a.id!==t.id));
  }
  async function deleteSubject(subject){
@@ -110,6 +277,12 @@ function App(){
   const message=count?`Delete “${subject.name}” and its ${count} task${count===1?'':'s'}? This cannot be undone.`:`Delete “${subject.name}”? This cannot be undone.`;
   if(!window.confirm(message)) return;
   if(cloudReady&&user){
+   const subjectTasks=tasks.filter(t=>t.subject_id===subject.id);
+   for(const task of subjectTasks){
+    if(!task.google_event_id)continue;
+    if(!googleProviderToken){alert('One or more tasks are linked to Google Calendar, but Calendar access is not connected. Sign out and sign in with Google again, then delete the subject.');return}
+    try{await deleteGoogleCalendarEvent(googleProviderToken,task.google_event_id)}catch(e){if(e.status!==404){alert(`Could not remove a task from Google Calendar. ${e.message||'Please try again.'}`);return}}
+   }
    const taskDelete=await supabase.from('tasks').delete().eq('subject_id',subject.id);
    if(taskDelete.error){alert(`Could not delete the subject tasks. ${taskDelete.error.message}`);return}
    const sessionDelete=await supabase.from('study_sessions').delete().eq('subject_id',subject.id);
@@ -137,7 +310,7 @@ function App(){
   else {setTab('Subjects');setSelectedSubject(result.id);}
   clearSearch();
  };
- return <div className={'app density-'+density.toLowerCase()}><aside className={(mobile?'side open':'side')+(sidebarCollapsed?' collapsed':'')}><div className="brand"><div className="logo">✦</div><div className="brandCopy"><b>ORBIT Tracker</b><small>plan, organize, and get things done</small></div><button className="iconbtn close" onClick={()=>setMobile(false)} aria-label="Close sidebar"><X size={18}/></button></div><nav>{[['Dashboard',LayoutDashboard],['Tasks',CheckSquare],['Subjects',BookOpen],['Calendar',CalendarDays],['Focus',Timer]].map(([n,I])=><button className={tab===n?'nav active':'nav'} onClick={()=>{setTab(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span></button>)}<button className={tab==='Settings'?'nav active':'nav'} onClick={()=>{setTab('Settings');setMobile(false)}}><Settings size={18}/><span>Settings</span></button></nav><div className="sideBottom"><div className="quoteCard"><div className="quoteMark">“</div><p>Small steps, every day.</p><small>Progress is built one task at a time.</small><div className="onlineStatus"><span className="dot onlineDot"/><span>Online</span></div></div></div></aside><main><header><button className="iconbtn menu" onClick={()=>{if(window.innerWidth<=800){setMobile(true)}else{setSidebarCollapsed(v=>{const next=!v;localStorage.setItem('orbit_sidebar_collapsed',next?'1':'0');return next})}}} aria-label={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"} title={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"}><Menu/></button><div className="crumb">{tab}<span> / </span><b>{tab==='Dashboard'?'Today':'Workspace'}</b></div><div className="headActions"><div className={'search '+(searchTerm?'searchActive':'')}><Search size={17}/><input value={search} onFocus={()=>searchTerm&&setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} onKeyDown={e=>{if(e.key==='Enter'&&searchResults[0])openSearchResult(searchResults[0]);if(e.key==='Escape'){clearSearch();setSearchOpen(false)}}} placeholder="Search tasks, notes, subjects..." aria-label="Search tasks, notes, and subjects"/><button type="button" className="searchClear" onClick={()=>{clearSearch();setSearchOpen(false)}} aria-label="Clear search" title="Clear search">{searchTerm?<X size={14}/>:null}</button>{searchTerm&&searchOpen&&<div className="searchResults" role="listbox" aria-label="Search results">{searchResults.length?searchResults.map(result=>{const Icon=result.icon;return <button type="button" className="searchResult" key={result.type+'-'+result.id} onClick={()=>openSearchResult(result)}><span className="searchResultIcon"><Icon size={15}/></span><span className="searchResultText"><b>{result.title}</b><small>{result.meta}</small></span><ArrowUpRight size={14}/></button>}):<div className="searchNoResults"><Search size={16}/><span>No matching tasks or subjects</span></div>}</div>}</div>{user?<div className="profile"><button onClick={()=>setProfileOpen(!profileOpen)} className="avatar">{(user.user_metadata?.full_name||user.email||user.phone||'U')[0].toUpperCase()}</button>{profileOpen&&<div className="profileMenu"><b>{user.user_metadata?.full_name||'User'}</b><small>{user.email||user.phone}</small><button onClick={logout}><LogOut size={15}/> Sign out</button></div>}</div>:<button className="google" onClick={login}>Sign in</button>}</div></header>{tab==='Dashboard'&&<Dashboard progress={progress} dueToday={dueToday} hours={hours} tasks={tasks} subjects={subjects} subjectMap={subjectMap} toggleTask={toggleTask} updateTask={updateTask} setTab={setTab} setModal={setModal}/>} {tab==='Tasks'&&<Tasks tasks={visibleTasks} subjectMap={subjectMap} toggleTask={toggleTask} deleteTask={deleteTask} setModal={setModal} filter={filter} setFilter={setFilter}/>} {tab==='Subjects'&&(selectedSubject?<SubjectDetail subject={subjects.find(s=>s.id===selectedSubject)} tasks={tasks} setTasks={setTasks} subjects={subjects} setSubjects={setSubjects} setSelectedSubject={setSelectedSubject} setModal={setModal} cloudReady={cloudReady} user={user} deleteTask={deleteTask} deleteSubject={deleteSubject} onEditSubject={setSubjectEdit}/>:<Subjects subjects={subjects} tasks={tasks} setModal={setModal} onSelect={setSelectedSubject}/>)} {tab==='Calendar'&&<Calendar tasks={tasks} subjectMap={subjectMap} setModal={setModal}/>} {tab==='Focus'&&<Focus timer={timer} running={running} setRunning={setRunning} setTimer={setTimer} onLogSession={()=>setSessionModal(true)} focusMode={focusMode} setFocusMode={setFocusMode} pomodoros={pomodoros} setPomodoros={setPomodoros} customMinutes={customMinutes} setCustomMinutes={setCustomMinutes}/>}  {tab==='Settings'&&<SettingsPage theme={theme} setTheme={setTheme} user={user} login={login} logout={logout} onOpen={setSettingsPanel}/>} {settingsPanel&&<SettingsDetail type={settingsPanel} theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} user={user} login={login} logout={logout} onFocusLengthChange={m=>{setRunning(false);setFocusMode('custom');setCustomMinutes(m);setTimer(m*60)}} onClearLocalData={()=>{if(!window.confirm('Clear all local tasks, subjects, and sessions? This cannot be undone.'))return;localStorage.removeItem('orbit_subjects');localStorage.removeItem('orbit_tasks');localStorage.removeItem('orbit_sessions');setSubjects([]);setTasks([]);setSessions([]);setSelectedSubject(null);}} onClose={()=>setSettingsPanel(null)}/>} </main>{(modal==='task'||(modal?.type==='task'))&&<TaskModal subjects={subjects} initialDate={modal?.dueDate||''} initialTask={modal?.task||null} onClose={()=>setModal(null)} onSave={saveTask}/>} {modal==='subject'&&<SubjectModal onClose={()=>setModal(null)} onSave={saveSubject}/>} {subjectEdit&&<SubjectEditModal subject={subjectEdit} onClose={()=>setSubjectEdit(null)} onSave={v=>updateSubject(subjectEdit,v)}/>} {sessionModal&&<SessionModal subjects={subjects} defaultMinutes={Math.max(1,Math.round(timer/60))} onClose={()=>setSessionModal(false)} onSave={logSession}/>} {authModal&&<AuthModal cloudReady={cloudReady} onClose={()=>setAuthModal(false)} onGoogle={loginGoogle} onSendOtp={loginPhone} onVerifyOtp={verifyPhone}/>}</div>
+ return <div className={'app density-'+density.toLowerCase()}><aside className={(mobile?'side open':'side')+(sidebarCollapsed?' collapsed':'')}><div className="brand"><div className="logo">✦</div><div className="brandCopy"><b>ORBIT Tracker</b><small>plan, organize, and get things done</small></div><button className="iconbtn close" onClick={()=>setMobile(false)} aria-label="Close sidebar"><X size={18}/></button></div><nav>{[['Dashboard',LayoutDashboard],['Tasks',CheckSquare],['Subjects',BookOpen],['Calendar',CalendarDays],['Focus',Timer]].map(([n,I])=><button className={tab===n?'nav active':'nav'} onClick={()=>{setTab(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span></button>)}<button className={tab==='Settings'?'nav active':'nav'} onClick={()=>{setTab('Settings');setMobile(false)}}><Settings size={18}/><span>Settings</span></button></nav><div className="sideBottom"><div className="quoteCard"><div className="quoteMark">“</div><p>Small steps, every day.</p><small>Progress is built one task at a time.</small><div className="onlineStatus"><span className="dot onlineDot"/><span>Online</span></div></div></div></aside><main><header><button className="iconbtn menu" onClick={()=>{if(window.innerWidth<=800){setMobile(true)}else{setSidebarCollapsed(v=>{const next=!v;localStorage.setItem('orbit_sidebar_collapsed',next?'1':'0');return next})}}} aria-label={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"} title={sidebarCollapsed?"Expand sidebar":"Collapse sidebar"}><Menu/></button><div className="crumb">{tab}<span> / </span><b>{tab==='Dashboard'?'Today':'Workspace'}</b></div><div className="headActions"><div className={'search '+(searchTerm?'searchActive':'')}><Search size={17}/><input value={search} onFocus={()=>searchTerm&&setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} onKeyDown={e=>{if(e.key==='Enter'&&searchResults[0])openSearchResult(searchResults[0]);if(e.key==='Escape'){clearSearch();setSearchOpen(false)}}} placeholder="Search tasks, notes, subjects..." aria-label="Search tasks, notes, and subjects"/><button type="button" className="searchClear" onClick={()=>{clearSearch();setSearchOpen(false)}} aria-label="Clear search" title="Clear search">{searchTerm?<X size={14}/>:null}</button>{searchTerm&&searchOpen&&<div className="searchResults" role="listbox" aria-label="Search results">{searchResults.length?searchResults.map(result=>{const Icon=result.icon;return <button type="button" className="searchResult" key={result.type+'-'+result.id} onClick={()=>openSearchResult(result)}><span className="searchResultIcon"><Icon size={15}/></span><span className="searchResultText"><b>{result.title}</b><small>{result.meta}</small></span><ArrowUpRight size={14}/></button>}):<div className="searchNoResults"><Search size={16}/><span>No matching tasks or subjects</span></div>}</div>}</div>{user?<div className="profile"><button onClick={()=>setProfileOpen(!profileOpen)} className="avatar">{(user.user_metadata?.full_name||user.email||user.phone||'U')[0].toUpperCase()}</button>{profileOpen&&<div className="profileMenu"><b>{user.user_metadata?.full_name||'User'}</b><small>{user.email||user.phone}</small><button onClick={logout}><LogOut size={15}/> Sign out</button></div>}</div>:<button className="google" onClick={login}>Sign in</button>}</div></header>{tab==='Dashboard'&&<Dashboard progress={progress} dueToday={dueToday} hours={hours} tasks={tasks} subjects={subjects} subjectMap={subjectMap} toggleTask={toggleTask} updateTask={updateTask} setTab={setTab} setModal={setModal}/>} {tab==='Tasks'&&<Tasks tasks={visibleTasks} subjectMap={subjectMap} toggleTask={toggleTask} deleteTask={deleteTask} setModal={setModal} filter={filter} setFilter={setFilter}/>} {tab==='Subjects'&&(selectedSubject?<SubjectDetail subject={subjects.find(s=>s.id===selectedSubject)} tasks={tasks} setTasks={setTasks} subjects={subjects} setSubjects={setSubjects} setSelectedSubject={setSelectedSubject} setModal={setModal} cloudReady={cloudReady} user={user} deleteTask={deleteTask} deleteSubject={deleteSubject} onEditSubject={setSubjectEdit} toggleTask={toggleTask}/>:<Subjects subjects={subjects} tasks={tasks} setModal={setModal} onSelect={setSelectedSubject}/>)} {tab==='Calendar'&&<Calendar tasks={tasks} subjectMap={subjectMap} setModal={setModal}/>} {tab==='Focus'&&<Focus timer={timer} running={running} setRunning={setRunning} setTimer={setTimer} onLogSession={()=>setSessionModal(true)} focusMode={focusMode} setFocusMode={setFocusMode} pomodoros={pomodoros} setPomodoros={setPomodoros} customMinutes={customMinutes} setCustomMinutes={setCustomMinutes}/>}  {tab==='Settings'&&<SettingsPage theme={theme} setTheme={setTheme} user={user} login={login} logout={logout} onOpen={setSettingsPanel}/>} {settingsPanel&&<SettingsDetail type={settingsPanel} theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} user={user} login={login} logout={logout} onFocusLengthChange={m=>{setRunning(false);setFocusMode('custom');setCustomMinutes(m);setTimer(m*60)}} onClearLocalData={()=>{if(!window.confirm('Clear all local tasks, subjects, and sessions? This cannot be undone.'))return;localStorage.removeItem('orbit_subjects');localStorage.removeItem('orbit_tasks');localStorage.removeItem('orbit_sessions');setSubjects([]);setTasks([]);setSessions([]);setSelectedSubject(null);}} onClose={()=>setSettingsPanel(null)}/>} </main>{(modal==='task'||(modal?.type==='task'))&&<TaskModal subjects={subjects} initialDate={modal?.dueDate||''} initialTask={modal?.task||null} onClose={()=>setModal(null)} onSave={saveTask}/>} {modal==='subject'&&<SubjectModal onClose={()=>setModal(null)} onSave={saveSubject}/>} {subjectEdit&&<SubjectEditModal subject={subjectEdit} onClose={()=>setSubjectEdit(null)} onSave={v=>updateSubject(subjectEdit,v)}/>} {sessionModal&&<SessionModal subjects={subjects} defaultMinutes={Math.max(1,Math.round(timer/60))} onClose={()=>setSessionModal(false)} onSave={logSession}/>} {authModal&&<AuthModal cloudReady={cloudReady} onClose={()=>setAuthModal(false)} onGoogle={loginGoogle}/>}</div>
 }
 function Dropdown({value,onChange,options,ariaLabel='Select option',className='',optionLabels={},onDeleteOption}){
  const [open,setOpen]=useState(false); const ref=useRef(null);
@@ -200,7 +373,7 @@ function SettingsDetail({type,theme,setTheme,density,setDensity,user,login,logou
   {type==='Appearance'&&<div className="detailSettingsContent"><div className="detailSection"><b>Theme</b><small>Choose the interface style used across Orbit.</small><div className="detailChoices">{[['dark','Dark',Moon],['light','Light',Sun],['system','System',Monitor]].map(([id,label,Icon])=><button type="button" className={'detailChoice '+(theme===id?'selected':'')} onClick={()=>setTheme(id)} key={id}><Icon size={16}/><span>{label}</span>{theme===id&&<Check size={15}/>}</button>)}</div></div><div className="detailSection"><b>Interface density</b><small>Control how spacious lists and cards feel.</small><div className="detailChoices">{['Compact','Comfortable','Spacious'].map(x=><button type="button" className={'detailChoice '+(density===x?'selected':'')} onClick={()=>{setDensity(x);save('orbit_density',x)}} key={x}><span>{x}</span>{density===x&&<Check size={15}/>}</button>)}</div></div></div>}
   {type==='Notifications'&&<div className="detailSettingsContent"><ToggleRow label="Task reminders" desc="Allow Orbit to surface reminders for upcoming work." checked={notifications} onChange={v=>{setNotifications(v);save('orbit_notifications',v?'on':'off')}}/><div className="detailDivider"/><ToggleRow label="Focus sounds" desc="Use a sound cue when a focus session finishes." checked={sound} onChange={v=>{setSound(v);save('orbit_focus_sound',v?'on':'off')}}/></div>}
   {type==='Focus preferences'&&<div className="detailSettingsContent"><div className="detailSection"><b>Default focus length</b><small>This duration will be used when you open Focus.</small><div className="focusLengthGrid">{[15,25,45,60].map(m=><button type="button" className={'detailChoice '+(focusLength===m?'selected':'')} onClick={()=>{setFocusLength(m);save('orbit_default_focus',m);onFocusLengthChange?.(m)}} key={m}><span>{m} min</span>{focusLength===m&&<Check size={15}/>}</button>)}</div></div></div>}
-  {type==='Privacy & sync'&&<div className="detailSettingsContent"><div className="infoBox"><ShieldCheck size={18}/><div><b>Local data</b><small>Your tasks, subjects and preferences remain in this browser unless you connect cloud sync.</small></div></div><div className="infoBox"><div className="dot onlineDot"/><div><b>Connection</b><small>{user?'Signed in and ready for cloud sync.':'Using local workspace mode.'}</small></div></div><button type="button" className="secondary full" onClick={onClearLocalData}>Clear local workspace data</button></div>}
+  {type==='Privacy & sync'&&<div className="detailSettingsContent"><div className="infoBox"><ShieldCheck size={18}/><div><b>Cloud workspace</b><small>{user?'Your tasks, subjects and focus sessions are tied to your Google account and load when you sign in again.':'Sign in with Google to sync your workspace across devices.'}</small></div></div><div className="infoBox"><CalendarDays size={18}/><div><b>Google Calendar</b><small>{user?(googleProviderToken?'Connected — scheduled tasks are mirrored to your primary Google Calendar.':'Signed in, but Calendar permission is not connected. Sign out and sign in with Google again.'):'Sign in with Google to enable Calendar sync.'}</small></div></div><button type="button" className="secondary full" onClick={onClearLocalData}>Clear local workspace data</button></div>}
  </div></div>
 }
 
@@ -237,47 +410,66 @@ function DateField({value,onChange,label='Deadline',compact=false,onCancel}){
   </div>}
  </div>
 }
-function TaskModal({subjects,initialDate='',initialTask=null,onClose,onSave}){const [v,setV]=useState(()=>initialTask?{...initialTask}:{title:'',subject_id:subjects[0]?.id||'',due_date:initialDate,priority:'Medium',status:'Todo',estimated_minutes:30,notes:'',tags:[]});const editing=Boolean(initialTask?.id);return <Modal title={editing?'Edit task':'New task'} onClose={onClose}><label>Task title<input autoFocus value={v.title} onChange={e=>setV({...v,title:e.target.value})} placeholder="e.g. Finish the first draft"/></label><div className="formGrid"><label>Subject<Dropdown value={subjects.find(s=>s.id===v.subject_id)?.name||'Select subject'} onChange={name=>{const s=subjects.find(x=>x.name===name);setV({...v,subject_id:s?.id||''})}} options={subjects.map(s=>s.name)} ariaLabel="Select subject" className="formDropdown"/></label><label>Deadline<DateField value={v.due_date} onChange={due_date=>setV({...v,due_date})}/></label><label>Priority<Dropdown value={v.priority} onChange={priority=>setV({...v,priority})} options={['Low','Medium','High','Urgent']} ariaLabel="Select priority" className="formDropdown"/></label><label>Minutes<input type="number" min="5" value={v.estimated_minutes} onChange={e=>setV({...v,estimated_minutes:+e.target.value})}/></label></div><label>Description<textarea value={v.notes} onChange={e=>setV({...v,notes:e.target.value})} placeholder="Add details, context, links, or anything useful for this task..."/></label><button className="primary full" disabled={!v.title.trim()} onClick={()=>onSave(v)}>{editing?'Save changes':'Create task'}</button></Modal>}
-
-function SessionModal({subjects,defaultMinutes,onClose,onSave}){
- const [minutes,setMinutes]=useState(defaultMinutes||25);
- const [subjectId,setSubjectId]=useState(subjects[0]?.id||'');
- const [date,setDate]=useState(localDateKey(new Date()));
- return <Modal title="Log a focus session" onClose={onClose}>
-  <p className="modalIntro">Record time you already spent focusing. It will be added to your activity total.</p>
+function TimeField({value,onChange,label='Time'}){
+ const [open,setOpen]=useState(false);
+ const fieldRef=useRef(null);
+ const menuRef=useRef(null);
+ const parsed=value?value.split(':').map(Number):[null,null];
+ const rawH=Number.isFinite(parsed[0])?parsed[0]:null;
+ const minute=Number.isFinite(parsed[1])?parsed[1]:0;
+ const hour12=rawH==null?12:(rawH%12||12);
+ const period=rawH==null?'AM':rawH>=12?'PM':'AM';
+ const pretty=value?`${hour12}:${String(minute).padStart(2,'0')} ${period}`:'Select time';
+ const options=Array.from({length:96},(_,i)=>{
+   const h24=Math.floor(i/4), m=(i%4)*15, p=h24>=12?'PM':'AM', h12=h24%12||12;
+   return {value:`${String(h24).padStart(2,'0')}:${String(m).padStart(2,'0')}`, label:`${h12}:${String(m).padStart(2,'0')} ${p}`};
+ });
+ const toggle=()=>setOpen(v=>!v);
+ useEffect(()=>{
+   if(!open)return;
+   const close=e=>{
+     const t=e.target;
+     if(fieldRef.current?.contains(t)||menuRef.current?.contains(t))return;
+     setOpen(false);
+   };
+   document.addEventListener('pointerdown',close,true);
+   const key=e=>{if(e.key==='Escape')setOpen(false)};
+   document.addEventListener('keydown',key);
+   requestAnimationFrame(()=>menuRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'center'}));
+   return()=>{document.removeEventListener('pointerdown',close,true);document.removeEventListener('keydown',key)};
+ },[open]);
+ return <div className="timeField" ref={fieldRef}>
+   <button type="button" className={'timeFieldButton '+(open?'open':'')+(value?' hasValue':'')} onClick={toggle} aria-expanded={open} aria-haspopup="listbox">
+    <span className="timeValue"><small>{value?'TIME':label.toUpperCase()}</small><span>{pretty}</span></span><Clock3 size={18}/>
+   </button>
+   {open&&<div className="timeMenu" ref={menuRef} role="listbox" aria-label={`Choose ${label}`}>
+      <div className="timeMenuHead"><div><span className="eyebrow">{label.toUpperCase()}</span><b>{pretty}</b></div><button type="button" className="timeMenuClear" onClick={()=>{onChange('');setOpen(false)}} disabled={!value}>Clear</button></div>
+      <div className="timeQuickRow"><button type="button" onClick={()=>onChange('09:00')}>9:00 AM</button><button type="button" onClick={()=>onChange('12:00')}>12:00 PM</button><button type="button" onClick={()=>onChange('18:00')}>6:00 PM</button><button type="button" onClick={()=>onChange('21:00')}>9:00 PM</button></div>
+      <div className="timeOptions">{options.map(o=><button type="button" key={o.value} role="option" aria-selected={value===o.value} className={'timeOption '+(value===o.value?'selected':'')} onClick={()=>{onChange(o.value);setOpen(false)}}><span>{o.label}</span>{value===o.value&&<Check size={15}/>}</button>)}</div>
+   </div>}
+ </div>
+}
+function TaskModal({subjects,initialDate='',initialTask=null,onClose,onSave}){
+ const [v,setV]=useState(()=>{
+  if(initialTask){const startDate=initialTask.start_date||initialTask.due_date||'';const endDate=initialTask.end_date||initialTask.due_date||startDate;return {...initialTask,start_date:startDate,end_date:endDate,start_time:initialTask.start_time||'',end_time:initialTask.end_time||''}}
+  return {title:'',subject_id:null,start_date:initialDate||'',end_date:initialDate||'',start_time:'',end_time:'',priority:'Medium',status:'Todo',estimated_minutes:null,notes:'',tags:[]}
+ });
+ const editing=Boolean(initialTask?.id); const autoMinutes=durationMinutes(v.start_date,v.start_time,v.end_date,v.end_time); const set=(key,value)=>setV(x=>({...x,[key]:value}));
+ const clearStart=()=>setV(x=>({...x,start_date:'',start_time:''})); const clearEnd=()=>setV(x=>({...x,end_date:'',end_time:''}));
+ return <Modal title={editing?'Edit task':'New task'} onClose={onClose}>
+  <label>Task title <small className="optional">Optional</small><input autoFocus value={v.title||''} onChange={e=>set('title',e.target.value)} placeholder="e.g. Finish the first draft"/></label>
   <div className="formGrid">
-   <label>Duration (minutes)<input autoFocus type="number" min="1" max="600" value={minutes} onChange={e=>setMinutes(e.target.value)}/></label>
-   <label>Date<DateField value={date} onChange={setDate}/></label>
-   <label>Subject<Dropdown value={subjects.find(s=>s.id===subjectId)?.name||'Select subject'} onChange={name=>setSubjectId(subjects.find(s=>s.name===name)?.id||'')} options={subjects.map(s=>s.name)} ariaLabel="Select subject" className="formDropdown"/></label>
+   <label>Subject <small className="optional">Optional</small><Dropdown value={subjects.find(s=>s.id===v.subject_id)?.name||'Select subject'} onChange={name=>{const s=subjects.find(x=>x.name===name);set('subject_id',s?.id||null)}} options={subjects.map(s=>s.name)} ariaLabel="Select subject" className="formDropdown"/></label>
+   <div className="dateRangeField"><span className="fieldLabel">Schedule <small className="optional">Optional</small></span><div className="dateRangeGrid"><label><span>Start date</span><DateField value={v.start_date||''} onChange={date=>set('start_date',date)} label="Start date"/></label><label><span>End date</span><DateField value={v.end_date||''} onChange={date=>set('end_date',date)} label="End date"/></label></div></div>
+   <label>Start time <small className="optional">Optional</small><TimeField value={v.start_time} onChange={time=>set('start_time',time)} label="Start time"/></label>
+   <label>End time <small className="optional">Optional</small><TimeField value={v.end_time} onChange={time=>set('end_time',time)} label="End time"/></label>
+   <label>Priority <small className="optional">Optional</small><Dropdown value={v.priority||'Medium'} onChange={priority=>set('priority',priority||'Medium')} options={['Low','Medium','High','Urgent']} ariaLabel="Select priority" className="formDropdown"/></label>
+   <label>Minutes <small className="optional">Optional</small><input type="number" min="0" value={autoMinutes??(v.estimated_minutes??'')} readOnly={autoMinutes!=null} onChange={e=>set('estimated_minutes',e.target.value)} placeholder={autoMinutes!=null?'Calculated automatically':'e.g. 30'}/>{autoMinutes!=null&&<small className="timeHint">Calculated from start and end date/time</small>}</label>
   </div>
-  <button type="button" className="primary full" disabled={!Number(minutes)||Number(minutes)<1||!date} onClick={()=>onSave(minutes,subjectId,date)}>Save session</button>
+  <label>Description <small className="optional">Optional</small><textarea value={v.notes||''} onChange={e=>set('notes',e.target.value)} placeholder="Add details, context, links, or anything useful for this task..."/></label>
+  <button className="primary full" onClick={()=>onSave({...v,estimated_minutes:autoMinutes??v.estimated_minutes,due_date:v.end_date||null})}>{editing?'Save changes':'Create task'}</button>
  </Modal>
 }
-
-function AuthModal({cloudReady,onClose,onGoogle,onSendOtp,onVerifyOtp}){
- const [mode,setMode]=useState('choose'); const [phone,setPhone]=useState(''); const [token,setToken]=useState(''); const [sent,setSent]=useState(false); const [busy,setBusy]=useState(false); const [error,setError]=useState('');
- const normalizePhone=v=>v.replace(/[^\d+]/g,'');
- async function send(){setError('');const value=normalizePhone(phone);if(!/^\+[1-9]\d{7,14}$/.test(value)){setError('Enter your phone number with country code, e.g. +91 9876543210.');return}setBusy(true);try{await onSendOtp(value);setPhone(value);setSent(true)}catch(e){setError(e.message||'Could not send OTP.')}finally{setBusy(false)}}
- async function verify(){setError('');if(!/^\d{4,8}$/.test(token.trim())){setError('Enter the OTP you received.');return}setBusy(true);try{await onVerifyOtp(phone,token.trim())}catch(e){setError(e.message||'Could not verify OTP.')}finally{setBusy(false)}}
- return <div className="overlay authOverlay" onMouseDown={onClose}><div className="modal authModal" onMouseDown={e=>e.stopPropagation()}>
-  <div className="modalHead"><div><span className="eyebrow">ORBIT ACCOUNT</span><h2>Sign in to Orbit</h2></div><button className="iconbtn" onClick={onClose} aria-label="Close sign in"><X/></button></div>
-  {!cloudReady&&<div className="authNotice">Cloud sign-in is not configured yet. Add your Supabase URL and anon key to enable Google and phone OTP.</div>}
-  {mode==='choose'&&<div className="authChoices">
-   <button className="authMethod googleMethod" disabled={!cloudReady||busy} onClick={onGoogle}><span className="googleMark">G</span><span><b>Google</b><small>Fast, secure sign in</small></span><ArrowUpRight size={15}/></button>
-   <div className="authDivider"><span>or</span></div>
-   <button className="authMethod" disabled={!cloudReady} onClick={()=>setMode('phone')}><span className="methodIcon">+1</span><span><b>Use phone number</b><small>Get a one-time verification code</small></span><ArrowUpRight size={15}/></button>
-  </div>}
-  {mode==='phone'&&<div className="authPhoneForm">
-   <button className="authBack" type="button" onClick={()=>{setMode('choose');setSent(false);setError('')}}>← Back to sign-in options</button>
-   {!sent?<><label>Phone number<input autoFocus inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')send()}} placeholder="+91 9876543210"/></label><button className="primary full" disabled={!cloudReady||busy} onClick={send}>{busy?'Sending code…':'Send OTP'}</button></>:<><label>Verification code<input autoFocus inputMode="numeric" maxLength="8" value={token} onChange={e=>setToken(e.target.value.replace(/\D/g,''))} onKeyDown={e=>{if(e.key==='Enter')verify()}} placeholder="Enter OTP"/></label><button className="primary full" disabled={busy} onClick={verify}>{busy?'Verifying…':'Verify & sign in'}</button><button className="secondary full resend" disabled={busy} onClick={send}>Send a new code</button></>}
-   {error&&<div className="authError">{error}</div>}
-   <small className="authFinePrint">By continuing, you agree to use this number for Orbit account verification.</small>
-  </div>}
- </div></div>
-}
-
-function SubjectEditModal({subject,onClose,onSave}){const [v,setV]=useState({name:subject?.name||'',code:subject?.code||'',category:subject?.category||'Work',color:subject?.color||'#8b5cf6',target_hours:subject?.target_hours||0,notes:subject?.notes||''});return <Modal title="Edit subject" onClose={onClose}><label>Subject name<input autoFocus value={v.name} onChange={e=>setV({...v,name:e.target.value})} placeholder="e.g. Product Design"/></label><div className="formGrid"><label>Category<CategoryPicker value={v.category} onChange={category=>setV({...v,category})}/></label><label>Code<input value={v.code} onChange={e=>setV({...v,code:e.target.value})} placeholder="CS / IT"/></label><label>Target hours<input type="number" min="0" value={v.target_hours} onChange={e=>setV({...v,target_hours:+e.target.value})}/></label><label>Accent<input type="color" value={v.color} onChange={e=>setV({...v,color:e.target.value})}/></label></div><label>Description<textarea value={v.notes} onChange={e=>setV({...v,notes:e.target.value})} placeholder="Describe this subject, project, goal, or anything useful to remember..."/></label><div className="editSubjectHint"><span>Changes update this subject without affecting its tasks or PDF notes.</span></div><button className="primary full" disabled={!v.name.trim()} onClick={()=>onSave(v)}>Save changes</button></Modal>}
-
 function SubjectModal({onClose,onSave}){const [v,setV]=useState({name:'',code:'',category:'Work',color:'#8b5cf6',target_hours:20,notes:''});return <Modal title="Add subject" onClose={onClose}><label>Subject name<input autoFocus value={v.name} onChange={e=>setV({...v,name:e.target.value})} placeholder="e.g. Product Design"/></label><div className="formGrid"><label>Category<CategoryPicker value={v.category} onChange={category=>setV({...v,category})}/></label><label>Code<input value={v.code} onChange={e=>setV({...v,code:e.target.value})} placeholder="CS / IT"/></label><label>Target hours<input type="number" min="0" value={v.target_hours} onChange={e=>setV({...v,target_hours:+e.target.value})}/></label><label>Accent<input type="color" value={v.color} onChange={e=>setV({...v,color:e.target.value})}/></label></div><label>Description<textarea value={v.notes} onChange={e=>setV({...v,notes:e.target.value})} placeholder="Describe this subject, project, goal, or anything useful to remember..."/></label><button className="primary full" disabled={!v.name.trim()} onClick={()=>onSave(v)}>Create subject</button></Modal>}
 function Stat({icon:Icon,label,value,sub,onClick,accent='purple',detail}){return <button type="button" className={'stat statClickable '+accent} onClick={onClick} aria-label={`${label}: ${value}. ${sub}`}><div className="statTop"><div className="statIcon"><Icon size={19}/></div><span className="statArrow"><ArrowUpRight size={15}/></span></div><div className="statBody"><small>{label}</small><strong>{value}</strong><span>{sub}</span></div>{detail&&<span className="statDetail">{detail}</span>}</button>}
 function Dashboard(p){const upcoming=p.tasks.filter(t=>t.status!=='Done').sort((a,b)=>(a.due_date||'9').localeCompare(b.due_date||'9')).slice(0,5);return <section className="page"><div className="hero"><div><span className="eyebrow">{formatDashboardDate()}</span><h1>Make progress, <em>not pressure.</em></h1><p>Your tasks, projects, and plans, in one calm workspace.</p></div><button className="primary" onClick={()=>p.setModal('task')}><Plus size={18}/> Add task</button></div><div className="stats"><Stat icon={Target} label="Overall progress" value={p.progress+'%'} sub="across your tasks" detail={`${p.tasks.filter(t=>t.status==='Done').length} completed`} onClick={()=>p.setTab('Tasks')} accent="purple"/><Stat icon={Clock3} label="Time logged" value={p.hours+'h'} sub="all-time sessions" detail="Open focus timer" onClick={()=>p.setTab('Focus')} accent="cyan"/><Stat icon={CheckSquare} label="Due today" value={p.dueToday} sub="tasks to finish" detail={p.dueToday?'Needs attention':'All clear today'} onClick={()=>p.setTab('Calendar')} accent="green"/><Stat icon={Flame} label="Momentum" value={p.progress>70?'Strong':'Building'} sub="keep the streak alive" detail="Keep moving forward" onClick={()=>p.setTab('Focus')} accent="orange"/></div><div className="grid2"><div className="panel"><div className="panelHead"><div><span className="eyebrow">UP NEXT</span><h2>Your priority queue</h2></div><button className="textBtn" onClick={()=>p.setTab('Tasks')}>View all <ArrowUpRight size={15}/></button></div>{upcoming.length?<div className="taskList">{upcoming.map(t=><TaskRow key={t.id} t={t} subject={p.subjectMap[t.subject_id]} subjects={p.subjects} toggle={p.toggleTask} updateTask={p.updateTask}/>)}</div>:<Empty text="You're all caught up. ✨"/>}</div><div className="panel"><div className="panelHead"><div><span className="eyebrow">SUBJECT PULSE</span><h2>Where your time goes</h2></div><button className="textBtn" onClick={()=>p.setModal('subject')}><Plus size={15}/> Subject</button></div><div className="subjectBars">{p.subjects.slice(0,5).map(s=>{const total=p.tasks.filter(t=>t.subject_id===s.id).length;const d=p.tasks.filter(t=>t.subject_id===s.id&&t.status==='Done').length;return <div className="barRow" key={s.id}><div className="barLabel"><span className="subjectDot" style={{background:s.color}}/><b>{s.name}</b><span>{d}/{total}</span></div><div className="bar"><i style={{width:`${total?d/total*100:0}%`,background:s.color}}/></div></div>})}</div></div></div></section>}
@@ -297,7 +489,7 @@ function TaskRow({t,subject,toggle,updateTask,subjects=[]}){
 function Tasks({tasks,subjectMap,toggleTask,deleteTask,setModal,filter,setFilter}){const priorityFilter=['All','High','Urgent'].includes(filter)?filter:'All';const orderedTasks=[...tasks].sort((a,b)=>{const ad=a.status==='Done',bd=b.status==='Done';if(ad!==bd)return ad?1:-1;return (a.due_date||'9999-12-31').localeCompare(b.due_date||'9999-12-31')});return <section className="page"><div className="sectionTop"><div><span className="eyebrow">WORK QUEUE</span><h1>Tasks</h1><p>Break big goals into small, finishable moves.</p></div><button className="primary" onClick={()=>setModal('task')}><Plus size={18}/> New task</button></div><div className="filters"><div className="seg">{['All','Todo','In Progress','Done'].map(x=><button className={filter===x?'selected':''} onClick={()=>setFilter(x)} key={x}>{x}</button>)}</div><Dropdown value={priorityFilter} onChange={setFilter} options={['All','High','Urgent']} ariaLabel="Filter tasks by priority" className="priorityDropdown"/></div><div className="panel tablePanel">{orderedTasks.length?orderedTasks.map(t=><div className={'taskRow detailed '+(t.status==='Done'?'taskCompleted':'')} key={t.id}><button className={t.status==='Done'?'check done':'check'} onClick={()=>toggleTask(t)} aria-label={t.status==='Done'?'Mark task incomplete':'Mark task complete'}>{t.status==='Done'&&<Check size={14}/>}</button><div className="taskInfo"><b>{t.title}</b><div><span className="pill" style={{borderColor:subjectMap[t.subject_id]?.color,color:subjectMap[t.subject_id]?.color}}>{subjectMap[t.subject_id]?.name||'Unassigned'}</span>{(t.tags||[]).map(x=><span key={x}>#{x}</span>)}<span>{t.due_date||'No deadline'}</span></div>{t.notes&&<p className="taskNotesPreview">{t.notes}</p>}</div><span className={'priority '+t.priority.toLowerCase()}>{t.priority}</span><div className="taskActions"><button type="button" className="iconbtn" onClick={()=>setModal({type:'task',task:t})} aria-label={`Edit ${t.title}`} title="Edit task"><Pencil size={15}/></button><button type="button" className="iconbtn dangerIcon" onClick={()=>deleteTask(t)} aria-label={`Delete ${t.title}`} title="Delete task"><Trash2 size={15}/></button></div></div>):<Empty text="No tasks yet. Add your first task."/>}</div></section>}
 function Subjects({subjects,tasks,setModal,onSelect}){return <section className="page"><div className="sectionTop"><div><span className="eyebrow">YOUR ORGANIZATION</span><h1>Subjects</h1><p>Organize the areas of your life and keep the big picture in view.</p></div><button className="primary" onClick={()=>setModal('subject')}><Plus size={18}/> Add subject</button></div><div className="subjectGrid">{subjects.map(s=>{const total=tasks.filter(t=>t.subject_id===s.id).length,done=tasks.filter(t=>t.subject_id===s.id&&t.status==='Done').length;return <button className="subjectCard clickableSubject" key={s.id} onClick={()=>onSelect(s.id)}><div className="subjectAccent" style={{background:s.color}}/><div className="subjectTop"><div className="bigIcon" style={{background:s.color+'22',color:s.color}}><BookOpen size={22}/></div><span className="category">{s.category}</span></div><h3>{s.name}</h3><small>{s.code||'CUSTOM'} · {s.target_hours||0} target hours</small><div className="subjectProgress"><span>{done}/{total} tasks complete</span><b>{total?Math.round(done/total*100):0}%</b></div><div className="bar"><i style={{width:`${total?done/total*100:0}%`,background:s.color}}/></div><span className="subjectOpenHint">Open subject <ArrowUpRight size={13}/></span></button>})}<button className="addCard" onClick={()=>setModal('subject')}><Plus/> <b>Add another subject</b><span>Work, personal, learning, or anything else</span></button></div></section>}
 
-function SubjectDetail({subject,tasks,setTasks,subjects,setSubjects,setSelectedSubject,setModal,cloudReady,user,deleteTask,deleteSubject,onEditSubject}){
+function SubjectDetail({subject,tasks,setTasks,subjects,setSubjects,setSelectedSubject,setModal,cloudReady,user,deleteTask,deleteSubject,onEditSubject,toggleTask}){
  const [section,setSection]=useState('tasks');
  const [description,setDescription]=useState(subject?.notes||'');
  const [pdfs,setPdfs]=useState([]);
@@ -309,7 +501,7 @@ function SubjectDetail({subject,tasks,setTasks,subjects,setSubjects,setSelectedS
  const subjectTasks=tasks.filter(t=>t.subject_id===subject.id).sort((a,b)=>{const ad=a.status==='Done',bd=b.status==='Done';if(ad!==bd)return ad?1:-1;return (a.due_date||'9999').localeCompare(b.due_date||'9999')});
  const completed=subjectTasks.filter(t=>t.status==='Done').length;
  const progress=subjectTasks.length?Math.round(completed/subjectTasks.length*100):0;
- async function toggle(t){const status=t.status==='Done'?'Todo':'Done';if(cloudReady&&user)await supabase.from('tasks').update({status,completed_at:status==='Done'?new Date().toISOString():null}).eq('id',t.id);setTasks(x=>x.map(a=>a.id===t.id?{...a,status}:a))}
+ async function toggle(t){if(toggleTask){await toggleTask(t);return}const status=t.status==='Done'?'Todo':'Done';if(cloudReady&&user)await supabase.from('tasks').update({status,completed_at:status==='Done'?new Date().toISOString():null}).eq('id',t.id);setTasks(x=>x.map(a=>a.id===t.id?{...a,status}:a))}
  async function saveDescription(){
   if(cloudReady&&user)await supabase.from('subjects').update({notes:description}).eq('id',subject.id);
   setSubjects(x=>x.map(s=>s.id===subject.id?{...s,notes:description}:s));
@@ -326,7 +518,7 @@ function SubjectDetail({subject,tasks,setTasks,subjects,setSubjects,setSelectedS
     <button className={section==='description'?'selected':''} onClick={()=>setSection('description')}><FileText size={16}/> Description</button>
     <button className={section==='notes'?'selected':''} onClick={()=>setSection('notes')}><FilePlus2 size={16}/> Notes <span>{pdfs.length}</span></button>
    </div>
-   {section==='tasks'&&<div className="panel subjectTaskPanel">{subjectTasks.length?subjectTasks.map(t=><div className={'taskRow detailed '+(t.status==='Done'?'taskCompleted':'')} key={t.id}><button className={t.status==='Done'?'check done':'check'} onClick={()=>toggle(t)} aria-label={t.status==='Done'?'Mark task incomplete':'Mark task complete'}>{t.status==='Done'&&<Check size={14}/>}</button><div className="taskInfo"><b>{t.title}</b><div>{(t.tags||[]).map(x=><span key={x}>#{x}</span>)}<span>{t.due_date||'No deadline'}</span><span>{t.estimated_minutes||0} min</span></div>{t.notes&&<p className="taskNotesPreview">{t.notes}</p>}</div><span className={'priority '+t.priority.toLowerCase()}>{t.priority}</span><div className="taskActions"><button type="button" className="iconbtn" onClick={()=>setModal({type:'task',task:t})} aria-label={`Edit ${t.title}`} title="Edit task"><Pencil size={15}/></button><button type="button" className="iconbtn dangerIcon" onClick={()=>deleteTask(t)} aria-label={`Delete ${t.title}`} title="Delete task"><Trash2 size={15}/></button></div></div>):<Empty text="No tasks in this subject yet. Add a task and assign it here."/>}</div>}
+   {section==='tasks'&&<div className="panel subjectTaskPanel">{subjectTasks.length?subjectTasks.map(t=><div className={'taskRow detailed '+(t.status==='Done'?'taskCompleted':'')} key={t.id}><button className={t.status==='Done'?'check done':'check'} onClick={()=>toggle(t)} aria-label={t.status==='Done'?'Mark task incomplete':'Mark task complete'}>{t.status==='Done'&&<Check size={14}/>}</button><div className="taskInfo"><b>{t.title}</b><div>{(t.tags||[]).map(x=><span key={x}>#{x}</span>)}<span>{t.due_date||'No deadline'}</span>{formatTaskTimeRange(t)&&<span>{formatTaskTimeRange(t)}</span>}<span>{t.estimated_minutes||0} min</span></div>{t.notes&&<p className="taskNotesPreview">{t.notes}</p>}</div><span className={'priority '+t.priority.toLowerCase()}>{t.priority}</span><div className="taskActions"><button type="button" className="iconbtn" onClick={()=>setModal({type:'task',task:t})} aria-label={`Edit ${t.title}`} title="Edit task"><Pencil size={15}/></button><button type="button" className="iconbtn dangerIcon" onClick={()=>deleteTask(t)} aria-label={`Delete ${t.title}`} title="Delete task"><Trash2 size={15}/></button></div></div>):<Empty text="No tasks in this subject yet. Add a task and assign it here."/>}</div>}
    {section==='description'&&<div className="panel subjectNotesPanel"><div className="panelHead"><div><span className="eyebrow">SUBJECT DESCRIPTION</span><h2>Description</h2></div><span className="notesSaved">A quick overview that stays with this subject</span></div><textarea className="subjectNotes" value={description} onChange={e=>setDescription(e.target.value)} placeholder="Describe this subject, project, goal, or anything useful to remember..."/><div className="notesActions"><button className="secondary" onClick={()=>setDescription(subject.notes||'')}>Reset</button><button className="primary" onClick={saveDescription}>Save description</button></div></div>}
    {section==='notes'&&<div className="panel subjectNotesPanel pdfPanel"><div className="panelHead"><div><span className="eyebrow">SUBJECT NOTES</span><h2>PDF notes & resources</h2><p className="pdfIntro">Keep books, lecture notes, reference material, and other PDFs together for this subject.</p></div><div><input ref={fileInputRef} className="hiddenFileInput" type="file" accept="application/pdf,.pdf" multiple onChange={uploadPdfs}/><button className="primary" onClick={()=>fileInputRef.current?.click()} disabled={pdfBusy}><Upload size={16}/>{pdfBusy?'Adding…':'Add PDFs'}</button></div></div>{pdfs.length?<div className="pdfList">{pdfs.map(pdf=><div className="pdfCard" key={pdf.id}><div className="pdfIcon"><File size={20}/></div><div className="pdfInfo"><b title={pdf.name}>{pdf.name}</b><span>{formatBytes(pdf.size)} · Added {new Date(pdf.created_at).toLocaleDateString()}</span></div><div className="pdfActions"><button className="iconbtn" onClick={()=>openPdf(pdf.id)} aria-label={`Open ${pdf.name}`} title="Open PDF"><ExternalLink size={16}/></button><button className="iconbtn" onClick={()=>openPdf(pdf.id,true)} aria-label={`Download ${pdf.name}`} title="Download"><Download size={16}/></button><button className="iconbtn dangerIcon" onClick={()=>removePdf(pdf.id)} aria-label={`Remove ${pdf.name}`} title="Remove"><Trash2 size={16}/></button></div></div>)}</div>:<div className="pdfEmpty"><div className="pdfEmptyIcon"><FilePlus2 size={24}/></div><b>No PDF notes yet</b><span>Add textbooks, class notes, manuals, or reference PDFs for this subject.</span><button className="secondary" onClick={()=>fileInputRef.current?.click()}><Upload size={15}/> Add your first PDF</button></div>}<div className="pdfStorageHint"><ShieldCheck size={15}/><span>PDFs are stored securely in this browser for this device. Your subject and task data can still use cloud sync when configured.</span></div></div>}
  </section>
@@ -345,7 +537,7 @@ function Calendar({tasks,subjectMap,setModal}){
  const resetToday=()=>{const d=new Date();d.setHours(0,0,0,0);setSelectedDate(localDateKey(d));setCursor(()=>{const x=new Date(d);x.setDate(1);return x});};
  const monthLabel=cursor.toLocaleDateString('en',{month:'long',year:'numeric'});
  const yearLabel=String(cursor.getFullYear());
- const renderTask=function(t){const done=t.status==='Done';return <div className={'event '+(done?'eventDone':'')} style={{borderLeftColor:subjectMap[t.subject_id]?.color||'#8b5cf6'}} key={t.id}><div className="eventTitle">{done?<Check size={11}/>:null}{t.title}</div><small>{subjectMap[t.subject_id]?.name||'Unassigned'} · {t.priority}</small></div>};
+ const renderTask=function(t){const done=t.status==='Done';const timeRange=formatTaskTimeRange(t);return <div className={'event '+(done?'eventDone':'')} style={{borderLeftColor:subjectMap[t.subject_id]?.color||'#8b5cf6'}} key={t.id}><div className="eventTitle">{done?<Check size={11}/>:null}{t.title||'Untitled task'}</div><small>{timeRange?`${timeRange} · `:''}{subjectMap[t.subject_id]?.name||'Unassigned'} · {t.priority}</small></div>};
  const dayCell=(d,opts={})=>{const ds=localDateKey(d);const list=tasks.filter(t=>t.due_date===ds);const isToday=ds===today;const isSelected=ds===selectedDate;const isWeekend=[0,6].includes(d.getDay());return <button type="button" className={'day calendarDayBtn '+(isToday?'today ':'')+(isSelected?'selectedDay ':'')+(isWeekend?'weekend ':'')+(opts.muted?'mutedDay':'')} onClick={()=>selectDate(ds)} key={ds}><div className="dayHead"><div><b>{d.toLocaleDateString('en',{weekday:'short'})}</b><small>{d.toLocaleDateString('en',{month:'short'})}</small></div><strong>{d.getDate()}</strong></div><div className="dayEvents">{list.slice(0,4).map(renderTask)}{list.length>4&&<div className="moreEvents">+{list.length-4} more</div>}{!list.length&&<div className="dayEmpty">No tasks</div>}</div><span className="dayAdd" onClick={(e)=>{e.stopPropagation();addForDate(ds)}}><Plus size={12}/> Add</span></button>};
  const renderToday=()=>{const d=selectedDateObj;return <div className="calendarSingle"><button type="button" className={'largeDay '+(selectedDate===today?'today':'')} onClick={()=>selectDate(selectedDate)}><div><span className="eyebrow">SELECTED DAY</span><h3>{d.toLocaleDateString('en',{weekday:'long'})}</h3><b>{d.toLocaleDateString('en',{month:'long',day:'numeric',year:'numeric'})}</b></div><div className="largeDayCount">{dayTasks.length}<small>{dayTasks.length===1?'task':'tasks'}</small></div></button></div>};
  const renderThree=()=>{const base=fromDateKey(today);base.setDate(base.getDate()-1);return <div className="threeGrid">{[0,1,2].map(i=>{const d=new Date(base);d.setDate(base.getDate()+i);return dayCell(d)})}</div>};
@@ -356,6 +548,7 @@ function Calendar({tasks,subjectMap,setModal}){
 }
 
 function fromDateKey(key){const [y,m,d]=key.split('-').map(Number);const x=new Date(y,m-1,d);x.setHours(0,0,0,0);return x}
+function formatTaskTimeRange(task){if(!task?.start_time&&!task?.end_time)return '';const fmt=v=>{if(!v)return '';const [h,m]=v.split(':').map(Number);const d=new Date(2000,0,1,h,m);return d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})};return task.start_time&&task.end_time?`${fmt(task.start_time)} – ${fmt(task.end_time)}`:fmt(task.start_time||task.end_time)}
 function Focus({timer,running,setRunning,setTimer,onLogSession,focusMode,setFocusMode,pomodoros,setPomodoros,customMinutes,setCustomMinutes}){
  const mm=String(Math.floor(timer/60)).padStart(2,'0'),ss=String(timer%60).padStart(2,'0');
  const setPreset=(minutes,mode='pomodoro',count=1)=>{setRunning(false);setFocusMode(mode);if(mode==='pomodoro')setPomodoros(count);setTimer(minutes*60)};
@@ -369,6 +562,28 @@ function Focus({timer,running,setRunning,setTimer,onLogSession,focusMode,setFocu
  </div>
  <div className="timer">{mm}<span>:</span>{ss}</div><div className="timerMeta">{focusMode==='custom'?'Custom session':`${pomodoros} ${pomodoros===1?'Pomodoro':'Pomodoros'}`}</div>
  <div className="timerActions"><button className="primary big" onClick={()=>setRunning(!running)}>{running?<Pause/>:<Play/>}{running?'Pause':'Start focus'}</button><button className="secondary" onClick={()=>{setRunning(false);setPreset(focusMode==='custom'?Number(customMinutes)||30:pomodoros*25,focusMode,pomodoros)}}><RotateCcw size={17}/> Reset</button></div><button type="button" className="manualSessionBtn" onClick={onLogSession}><Clock3 size={15}/><span>Log a session manually</span><ArrowUpRight size={14}/></button></div></section>}
+
+
+function AuthModal({cloudReady,onClose,onGoogle}){
+ return <div className="overlay authOverlay" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
+  <div className="modal authModal" onMouseDown={e=>e.stopPropagation()}>
+   <div className="modalHead">
+    <div><span className="eyebrow">WELCOME TO ORBIT</span><h2>Sign in</h2></div>
+    <button className="iconbtn" type="button" onClick={onClose} aria-label="Close sign in"><X/></button>
+   </div>
+   <p className="settingsHint">Sign in with Google to sync your ORBIT workspace and connect Google Calendar.</p>
+   <div className="authChoices">
+    <button type="button" className="authMethod" onClick={onGoogle} disabled={!cloudReady}>
+     <span className="googleMark" aria-hidden="true">G</span>
+     <span><b>Continue with Google</b><small>Sync your Orbit workspace + Google Calendar</small></span>
+     <ArrowUpRight size={16}/>
+    </button>
+   </div>
+   {!cloudReady&&<div className="authNotice">Cloud sign-in is not configured yet. Add your Supabase URL and publishable key to the environment first.</div>}
+   <small className="authFinePrint">By continuing, you use your Google account to sign in to ORBIT Tracker.</small>
+  </div>
+ </div>
+}
 
 
 function Modal({title,onClose,children}){return <div className="overlay" onMouseDown={onClose}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modalHead"><h2>{title}</h2><button className="iconbtn" onClick={onClose}><X/></button></div>{children}</div></div>}

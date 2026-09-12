@@ -575,6 +575,9 @@ body{transition:background .2s ease,color .2s ease}
 :root[data-theme="light"] .dateIconWrap{background:#f0eaff;border-color:#ded3ff;color:#7549ed}
 :root[data-theme="light"] .dateFieldButton.placeholder .dateValue{color:#7d879b}
 
+:root[data-theme="light"] .timeFieldButton{background:linear-gradient(180deg,#fff 0%,#f8f9fc 100%);border-color:#d1d8e5;color:#1b2231;box-shadow:0 8px 20px rgba(31,41,55,.06)}
+:root[data-theme="light"] .timeFieldButton:hover{background:#fff;border-color:#b99cff;box-shadow:0 10px 24px rgba(124,77,255,.10),0 0 0 3px rgba(124,77,255,.07)}
+
 @media(max-width:650px){
  .overlay{padding:12px}
  .modal{max-height:calc(100vh - 24px);width:min(100%,620px)}
@@ -989,7 +992,7 @@ main>.page::-webkit-scrollbar-thumb:hover{background:#363636}
 .googleMark,.methodIcon{width:32px;height:32px;min-width:32px;display:grid;place-items:center;border-radius:9px;border:1px solid #303030;background:#111;color:#fff;font-weight:700;font-size:14px}
 .methodIcon{font-size:10px;color:#aaa}
 .authDivider{display:flex;align-items:center;gap:10px;color:#555;font-size:10px;margin:2px 0}.authDivider:before,.authDivider:after{content:"";height:1px;background:#202020;flex:1}.authDivider span{padding:0 2px}
-.authPhoneForm{display:grid;gap:2px}.authPhoneForm label{display:block;color:#999;font-size:11px;margin-bottom:10px}.authPhoneForm input{width:100%;margin-top:7px;background:#0b0b0b!important;border:1px solid #292929!important;color:#ededed!important;border-radius:10px;padding:12px;outline:none}.authPhoneForm input:focus{border-color:#555!important;box-shadow:0 0 0 3px rgba(255,255,255,.04)}
+
 .authBack{border:0;background:transparent;color:#888;text-align:left;padding:0 0 14px;font-size:10px}.authBack:hover{color:#fff}
 .resend{margin-top:7px!important}.authNotice{padding:10px 11px;border:1px solid #30291b;background:#100e08;color:#9a8d6d;border-radius:10px;font-size:10px;line-height:1.5;margin-bottom:12px}.authError{margin-top:10px;padding:9px 10px;border:1px solid #442329;background:#160b0e;color:#fb9aaa;border-radius:9px;font-size:10px;line-height:1.45}.authFinePrint{display:block;color:#555;font-size:9px;line-height:1.5;margin-top:12px}
 @media(max-width:800px){header{padding:0 18px}.headActions{gap:7px}.headActions .search{width:min(46vw,300px)}}
@@ -1233,12 +1236,10 @@ main>.page::-webkit-scrollbar-thumb:hover{background:#363636}
 :root[data-theme="light"] .modal select,
 :root[data-theme="light"] .modal textarea,
 :root[data-theme="light"] .subjectNotes,
-:root[data-theme="light"] .authPhoneForm input,
 :root[data-theme="light"] .customCategoryRow input{background:#fafbfc!important;color:#17181b!important;border-color:#d8dbe0!important}
 :root[data-theme="light"] .modal input:focus,
 :root[data-theme="light"] .modal textarea:focus,
-:root[data-theme="light"] .subjectNotes:focus,
-:root[data-theme="light"] .authPhoneForm input:focus{border-color:#9da2aa!important;box-shadow:0 0 0 3px rgba(17,24,39,.06)!important}
+:root[data-theme="light"] .subjectNotes:focus{border-color:#9da2aa!important;box-shadow:0 0 0 3px rgba(17,24,39,.06)!important}
 :root[data-theme="light"] .dateFieldButton{background:#fff!important;color:#17181b!important;border-color:#d8dbe0!important}
 :root[data-theme="light"] .dateIconWrap{background:#f1f2f4!important;border-color:#dedfe3!important;color:#30343a!important}
 :root[data-theme="light"] .datePicker{background:#fff!important;border-color:#d8dbe0!important;box-shadow:0 28px 80px rgba(17,24,39,.16)!important}
@@ -1545,3 +1546,577 @@ header .headActions{
 .search input{height:24px;line-height:24px;padding:0;display:block;align-self:center;}
 .searchClear{flex:0 0 24px;align-self:center;}
 @media(max-width:650px){.search{align-items:center}.search>svg:first-child{width:18px;height:18px;min-width:18px;flex-basis:18px}}
+
+/* =========================================================
+   Global scrollbar system — consistent, slim, aesthetic
+   ========================================================= */
+:root{
+  --scroll-track: transparent;
+  --scroll-thumb: #303030;
+  --scroll-thumb-hover: #444;
+  --scroll-size: 8px;
+}
+:root[data-theme="light"]{
+  --scroll-track: transparent;
+  --scroll-thumb: #c5cad4;
+  --scroll-thumb-hover: #9da5b3;
+}
+
+/* Chromium / Edge / Safari */
+*::-webkit-scrollbar{
+  width:var(--scroll-size);
+  height:var(--scroll-size);
+}
+*::-webkit-scrollbar-track{
+  background:var(--scroll-track);
+  border-radius:999px;
+}
+*::-webkit-scrollbar-thumb{
+  background:var(--scroll-thumb);
+  border-radius:999px;
+  border:2px solid transparent;
+  background-clip:padding-box;
+  min-height:34px;
+}
+*::-webkit-scrollbar-thumb:hover{
+  background:var(--scroll-thumb-hover);
+  background-clip:padding-box;
+}
+*::-webkit-scrollbar-corner{
+  background:transparent;
+}
+*::-webkit-scrollbar-button{
+  display:none;
+  width:0;
+  height:0;
+}
+
+/* Firefox */
+html{
+  scrollbar-width:thin;
+  scrollbar-color:var(--scroll-thumb) var(--scroll-track);
+}
+html, body, #root{
+  scrollbar-gutter:stable;
+}
+
+/* Keep all app scroll areas visually consistent. */
+.app, .side, main, main>.page, .overlay, .modal,
+.dropdownMenu, .formDropdown .dropdownMenu, .monthWrap,
+.seg, .detailTabs, textarea, .searchResults{
+  scrollbar-width:thin;
+  scrollbar-color:var(--scroll-thumb) var(--scroll-track);
+}
+
+/* Give modal content breathing room so it never feels hidden
+   beneath the scrollbar. */
+.overlay{
+  scrollbar-gutter:stable;
+}
+.modal{
+  scrollbar-gutter:stable;
+  padding-right:22px !important;
+}
+.modal::-webkit-scrollbar{
+  width:var(--scroll-size);
+}
+.modal::-webkit-scrollbar-track{
+  margin:12px 0;
+}
+.modal::-webkit-scrollbar-thumb{
+  background:var(--scroll-thumb);
+  border:2px solid transparent;
+  background-clip:padding-box;
+}
+.modal::-webkit-scrollbar-thumb:hover{
+  background:var(--scroll-thumb-hover);
+  background-clip:padding-box;
+}
+
+/* Main page scroll area */
+main>.page{
+  scrollbar-gutter:stable;
+}
+main>.page::-webkit-scrollbar-track{
+  margin:8px 0;
+}
+
+/* Sidebar / compact internal panels */
+.side::-webkit-scrollbar-track,
+.dropdownMenu::-webkit-scrollbar-track,
+.formDropdown .dropdownMenu::-webkit-scrollbar-track{
+  margin:6px 0;
+}
+
+/* Prevent long form controls from developing ugly native scrollbars. */
+textarea{
+  scrollbar-width:thin;
+}
+
+/* =========================================================
+   Custom focus minutes control — refined Vercel-style field
+   ========================================================= */
+.customControl{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.customControl input{
+  appearance:textfield;
+  -moz-appearance:textfield;
+  width:84px;
+  height:42px;
+  margin:0;
+  padding:0 12px;
+  border:1px solid #2d2d2d;
+  border-radius:11px;
+  background:#0d0d0d;
+  color:#ededed;
+  text-align:center;
+  font-size:16px;
+  font-weight:600;
+  line-height:42px;
+  outline:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 1px 2px rgba(0,0,0,.2);
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease,transform .18s ease;
+}
+.customControl input:hover{
+  border-color:#444;
+  background:#101010;
+}
+.customControl input:focus{
+  border-color:#666;
+  background:#111;
+  box-shadow:0 0 0 3px rgba(255,255,255,.055),inset 0 1px 0 rgba(255,255,255,.035);
+}
+.customControl input::-webkit-outer-spin-button,
+.customControl input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+.customControl>span{
+  font-size:11px;
+  font-weight:500;
+  color:#858585;
+  white-space:nowrap;
+}
+.customControl .secondary.mini{
+  min-height:42px;
+  padding:0 13px;
+  border-radius:11px;
+  font-size:11px;
+  font-weight:600;
+  background:#0d0d0d;
+  border-color:#2d2d2d;
+  transition:border-color .18s ease,background .18s ease,transform .18s ease;
+}
+.customControl .secondary.mini:hover{
+  background:#171717;
+  border-color:#444;
+  transform:translateY(-1px);
+}
+.customControl .secondary.mini:active{
+  transform:translateY(0);
+}
+:root[data-theme="light"] .customControl input{
+  background:#fff;
+  color:#111827;
+  border-color:#d1d7e2;
+  box-shadow:inset 0 1px 0 rgba(17,24,39,.02),0 1px 2px rgba(17,24,39,.04);
+}
+:root[data-theme="light"] .customControl input:hover{
+  background:#fff;
+  border-color:#b9c2d0;
+}
+:root[data-theme="light"] .customControl input:focus{
+  border-color:#9b7cf4;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(124,77,255,.09),inset 0 1px 0 rgba(17,24,39,.02);
+}
+:root[data-theme="light"] .customControl>span{color:#667085}
+:root[data-theme="light"] .customControl .secondary.mini{
+  background:#fff;
+  color:#1f2937;
+  border-color:#d1d7e2;
+}
+:root[data-theme="light"] .customControl .secondary.mini:hover{
+  background:#f7f8fb;
+  border-color:#b9c2d0;
+}
+
+/* =========================================================
+   Unified popup / overlay motion
+   Every floating surface enters with the same quiet, polished
+   Vercel-style fade + lift + scale motion.
+   ========================================================= */
+:root{
+  --popup-ease:cubic-bezier(.22,1,.36,1);
+  --popup-duration:.24s;
+}
+
+@keyframes orbit-overlay-in{
+  from{opacity:0}
+  to{opacity:1}
+}
+
+@keyframes orbit-popup-in{
+  from{opacity:0;transform:translateY(10px) scale(.975)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+@keyframes orbit-popup-in-up{
+  from{opacity:0;transform:translateY(-6px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* Full-screen overlays */
+.overlay{
+  animation:orbit-overlay-in var(--popup-duration) ease-out both;
+  transform:translateZ(0);
+}
+
+/* All modal/dialog surfaces share exactly the same entrance. */
+.overlay > .modal,
+.settingsOverlay > .settingsDetail,
+.authOverlay > .authModal{
+  animation:orbit-popup-in .30s var(--popup-ease) both;
+  transform-origin:center center;
+  will-change:transform,opacity;
+}
+
+/* Floating menus use the same motion language, from their natural edge. */
+.profileMenu,
+.dropdownMenu,
+.searchResults,
+.datePicker{
+  will-change:transform,opacity;
+}
+
+.profileMenu,
+.dropdownMenu{
+  animation:orbit-popup-in-up .22s var(--popup-ease) both;
+  transform-origin:top right;
+}
+
+.searchResults,
+.datePicker{
+  animation:orbit-popup-in-up .22s var(--popup-ease) both;
+}
+
+/* Keep nested popups from stacking their animations awkwardly. */
+.overlay .dropdownMenu,
+.overlay .datePicker{
+  animation-duration:.20s;
+}
+
+/* Settings detail gets a slightly more deliberate, centered entrance. */
+.settingsDetail{
+  transform-origin:50% 45%;
+}
+
+/* Subtle stagger for the rows inside settings details. */
+.settingsDetail .detailSettingsContent > *{
+  animation:orbit-fade-up .28s var(--popup-ease) both;
+}
+.settingsDetail .detailSettingsContent > *:nth-child(2){animation-delay:.025s}
+.settingsDetail .detailSettingsContent > *:nth-child(3){animation-delay:.05s}
+.settingsDetail .detailSettingsContent > *:nth-child(4){animation-delay:.075s}
+
+/* Never force motion on users who request reduced motion. */
+@media (prefers-reduced-motion:reduce){
+  .overlay,
+  .overlay > .modal,
+  .settingsOverlay > .settingsDetail,
+  .authOverlay > .authModal,
+  .profileMenu,
+  .dropdownMenu,
+  .searchResults,
+  .datePicker,
+  .settingsDetail .detailSettingsContent > *{
+    animation:none!important;
+    transform:none!important;
+  }
+}
+
+/* =========================================================
+   Final scrollbar cleanup
+   Keep every scrollbar inside its rounded surface and remove
+   browser arrow buttons in Chromium/WebKit.
+   ========================================================= */
+:root{
+  --scroll-size:9px;
+  --scroll-thumb:#343434;
+  --scroll-thumb-hover:#4a4a4a;
+}
+:root[data-theme="light"]{
+  --scroll-thumb:#b9c0cc;
+  --scroll-thumb-hover:#9da6b4;
+}
+
+*::-webkit-scrollbar,
+.modal::-webkit-scrollbar,
+.overlay::-webkit-scrollbar,
+.side::-webkit-scrollbar,
+main::-webkit-scrollbar,
+main>.page::-webkit-scrollbar,
+.dropdownMenu::-webkit-scrollbar,
+.searchResults::-webkit-scrollbar,
+.datePicker::-webkit-scrollbar,
+.settingsDetail::-webkit-scrollbar{
+  width:var(--scroll-size)!important;
+  height:var(--scroll-size)!important;
+}
+
+*::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button:single-button,
+*::-webkit-scrollbar-button:vertical:start:decrement,
+*::-webkit-scrollbar-button:vertical:end:increment,
+*::-webkit-scrollbar-button:horizontal:start:decrement,
+*::-webkit-scrollbar-button:horizontal:end:increment{
+  display:none!important;
+  width:0!important;
+  height:0!important;
+  min-width:0!important;
+  min-height:0!important;
+  background:transparent!important;
+  border:0!important;
+}
+
+*::-webkit-scrollbar-track{
+  background:transparent!important;
+  border:0!important;
+  border-radius:999px!important;
+}
+
+*::-webkit-scrollbar-thumb{
+  background:var(--scroll-thumb)!important;
+  border:2px solid transparent!important;
+  background-clip:padding-box!important;
+  border-radius:999px!important;
+  min-height:34px!important;
+}
+*::-webkit-scrollbar-thumb:hover{
+  background:var(--scroll-thumb-hover)!important;
+  background-clip:padding-box!important;
+}
+
+/* The modal owns its scrollbar. Keep it inset from the rounded edge. */
+.modal{
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  scrollbar-gutter:stable!important;
+  padding-right:18px!important;
+}
+.modal::-webkit-scrollbar-track{
+  margin:10px 0!important;
+}
+.modal::-webkit-scrollbar-thumb{
+  margin:4px 0!important;
+}
+
+/* Avoid scrollbar controls escaping rounded popup surfaces. */
+.overlay,
+.settingsOverlay,
+.authOverlay{
+  overflow-x:hidden!important;
+}
+
+/* Consistent Firefox treatment. */
+html,
+body,
+#root,
+.app,
+.side,
+main,
+main>.page,
+.overlay,
+.modal,
+.dropdownMenu,
+.searchResults,
+.datePicker,
+.settingsDetail{
+  scrollbar-width:thin!important;
+  scrollbar-color:var(--scroll-thumb) transparent!important;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important}
+}
+
+.optional{display:inline-block;margin-left:6px;font-size:11px;font-weight:500;opacity:.55;text-transform:none;letter-spacing:0}
+
+.modal .timeHint{display:block;color:#737d98;font-size:9px;margin-top:5px}.modal input[readonly]{cursor:default;opacity:.82}
+
+/* =========================================================
+   ORBIT task scheduling — date range + visual clock pickers
+   ========================================================= */
+.dateRangeField{grid-column:1 / -1;min-width:0;margin-bottom:16px}
+.fieldLabel{display:block;color:#a1a1a1;font-size:11px;line-height:1.2;margin-bottom:8px}
+.dateRangeGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dateRangeGrid>label{margin:0!important;display:flex!important;flex-direction:column!important;gap:7px!important}
+.dateRangeGrid>label>span{font-size:9px;color:#6f6f6f;font-weight:600;letter-spacing:.8px;text-transform:uppercase}
+.dateRangeGrid .dateField{width:100%}
+.timeField{position:relative;width:100%}
+.timeFieldButton{width:100%;height:52px;min-height:52px;border:1px solid #2b2b2b;background:#0d0d0d;color:#fff;border-radius:12px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;text-align:left;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+.timeFieldButton:hover,.timeFieldButton.open{border-color:#555;background:#101010;box-shadow:0 0 0 3px rgba(255,255,255,.045)}
+.timeFieldButton>svg{color:#777;flex:none}
+.timeValue{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13px;font-weight:500}
+.timeValue small{font-size:9px;line-height:1;letter-spacing:1.3px;color:#666;font-weight:700}
+.timePicker{position:absolute;z-index:1000;right:0;top:calc(100% + 8px);width:286px;padding:12px;background:#090909;border:1px solid #2d2d2d;border-radius:17px;box-shadow:0 28px 80px rgba(0,0,0,.82),0 0 0 1px rgba(255,255,255,.02);animation:time-pop .16s var(--ease) both}
+.timePickerTop{display:flex;align-items:center;gap:3px;padding:2px 2px 11px;border-bottom:1px solid #202020}
+.timePickerTop>button{border:0;background:transparent;color:#666;padding:5px 6px;border-radius:7px;font-size:10px;font-weight:600;cursor:pointer}
+.timePickerTop>button.active{background:#fff;color:#000}
+.timePickerTop>span{color:#555;font-size:10px}
+.periodSwitch{margin-left:auto;display:flex;border:1px solid #292929;background:#101010;border-radius:8px;padding:2px}
+.periodSwitch button{border:0;background:transparent;color:#666;border-radius:6px;padding:5px 7px;font-size:9px;font-weight:700;cursor:pointer}
+.periodSwitch button.active{background:#fff;color:#000}
+.clockFace{position:relative;width:226px;height:226px;margin:13px auto 8px;border:1px solid #242424;border-radius:50%;background:radial-gradient(circle at 50% 50%,#151515 0,#0d0d0d 58%,#090909 59%);box-shadow:inset 0 0 0 8px rgba(255,255,255,.018),0 10px 30px rgba(0,0,0,.35)}
+.clockFace:before{content:"";position:absolute;inset:11px;border:1px dashed #252525;border-radius:50%;pointer-events:none}
+.clockCenter{position:absolute;left:50%;top:50%;width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);z-index:3;box-shadow:0 0 12px rgba(255,255,255,.35)}
+.clockHand{position:absolute;left:50%;top:50%;width:2px;height:74px;background:#fff;transform-origin:bottom center;border-radius:99px;z-index:2;opacity:.8}
+.clockHand:after{content:"";position:absolute;left:50%;bottom:-5px;width:8px;height:8px;background:#fff;border-radius:50%;transform:translateX(-50%)}
+.clockNumber{position:absolute;width:32px;height:32px;border:1px solid transparent;border-radius:50%;background:transparent;color:#888;font-size:9px;font-weight:600;display:grid;place-items:center;cursor:pointer;transition:background .14s ease,color .14s ease,border-color .14s ease,transform .14s ease}
+.clockNumber:hover{background:#1b1b1b;color:#fff;border-color:#383838;transform:scale(1.06)}
+.clockNumber.selected{background:#fff;color:#000;border-color:#fff;box-shadow:0 5px 18px rgba(255,255,255,.12)}
+.timeClear{width:100%;border:1px solid #262626;background:transparent;color:#777;border-radius:9px;padding:8px;font-size:9px;cursor:pointer}
+.timeClear:hover{background:#181818;color:#fff;border-color:#3a3a3a}
+@keyframes time-pop{from{opacity:0;transform:translateY(-5px) scale(.985)}to{opacity:1;transform:none}}
+@media(max-width:650px){
+ .dateRangeGrid{grid-template-columns:1fr}
+ .timePicker{width:min(286px,calc(100vw - 42px));right:50%;transform:translateX(50%)}
+}
+:root[data-theme="light"] .timeFieldButton{background:#fff;border-color:#d8dbe0;color:#16181d}
+:root[data-theme="light"] .timeFieldButton:hover,:root[data-theme="light"] .timeFieldButton.open{background:#fff;border-color:#9da6b4;box-shadow:0 0 0 3px rgba(17,24,39,.05)}
+:root[data-theme="light"] .timePicker{background:#fff;border-color:#d8dbe0;box-shadow:0 28px 80px rgba(17,24,39,.16)}
+:root[data-theme="light"] .timePickerTop{border-color:#e5e7eb}
+:root[data-theme="light"] .timePickerTop>button.active,:root[data-theme="light"] .periodSwitch button.active{background:#111;color:#fff}
+:root[data-theme="light"] .periodSwitch{background:#f4f4f5;border-color:#ddd}
+:root[data-theme="light"] .clockFace{background:radial-gradient(circle at 50% 50%,#f8f8f8 0,#f1f1f1 58%,#fff 59%);border-color:#ddd;box-shadow:inset 0 0 0 8px rgba(0,0,0,.025),0 10px 30px rgba(17,24,39,.08)}
+:root[data-theme="light"] .clockFace:before{border-color:#ddd}
+:root[data-theme="light"] .clockCenter,:root[data-theme="light"] .clockHand,:root[data-theme="light"] .clockHand:after{background:#111}
+:root[data-theme="light"] .clockNumber{color:#777}
+:root[data-theme="light"] .clockNumber:hover{background:#e9e9eb;color:#111;border-color:#d1d1d5}
+:root[data-theme="light"] .clockNumber.selected{background:#111;color:#fff;border-color:#111}
+:root[data-theme="light"] .timeClear{border-color:#ddd;color:#777}
+
+/* =========================================================
+   ORBIT v2 — floating clock picker polish
+   Portal-based so it can never be clipped by the task modal.
+   ========================================================= */
+.timePicker.timePickerFloating{
+  position:fixed!important;
+  z-index:100000!important;
+  width:min(330px,calc(100vw - 24px));
+  max-height:calc(100vh - 24px);
+  overflow:auto;
+  padding:14px;
+  border:1px solid #2a2a2a;
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 18% 8%,rgba(139,92,246,.16),transparent 30%),
+    radial-gradient(circle at 82% 0%,rgba(34,211,238,.08),transparent 28%),
+    linear-gradient(180deg,#111111,#090909);
+  box-shadow:0 36px 100px rgba(0,0,0,.78),0 0 0 1px rgba(255,255,255,.025),0 16px 44px rgba(139,92,246,.08);
+  animation:orbit-popup-in-up .22s var(--popup-ease) both!important;
+  transform-origin:bottom center;
+  isolation:isolate;
+}
+.timePicker.timePickerFloating.above{transform-origin:bottom center}
+.timePicker.timePickerFloating.below{transform-origin:top center}
+.timePicker.timePickerFloating::-webkit-scrollbar{width:6px}
+.timePicker.timePickerFloating::-webkit-scrollbar-track{background:transparent}
+.timePicker.timePickerFloating::-webkit-scrollbar-thumb{background:#333;border-radius:99px}
+.timePickerGlow{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(120deg,transparent 0 28%,rgba(255,255,255,.035) 45%,transparent 60%);opacity:.65}
+.timePickerHeader{position:relative;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:2px 2px 13px;border-bottom:1px solid #1f1f1f}
+.timePickerEyebrow{display:block;color:#666;font-size:8px;font-weight:700;letter-spacing:1.5px;line-height:1;margin-bottom:6px}
+.timePickerHeader strong{display:block;font-size:23px;line-height:1.05;letter-spacing:-.6px;color:#f5f5f5}
+.timePickerClose{width:30px;height:30px;border:1px solid #2a2a2a;background:#141414;color:#8a8a8a;border-radius:9px;display:grid;place-items:center;flex:none;transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease}
+.timePickerClose:hover{background:#1c1c1c;border-color:#454545;color:#fff;transform:rotate(4deg)}
+.timePickerTop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 8px;border-bottom:0}
+.timeStageSwitch{display:flex;align-items:center;gap:2px;padding:3px;background:#0f0f0f;border:1px solid #272727;border-radius:10px}
+.timeStageSwitch button{border:0;background:transparent;color:#747474;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:650;transition:background .16s ease,color .16s ease,transform .16s ease}
+.timeStageSwitch button:hover{color:#ddd}
+.timeStageSwitch button.active{background:#f6f6f6;color:#060606;box-shadow:0 4px 16px rgba(255,255,255,.08)}
+.timeStageSwitch span{color:#545454;font-size:11px}
+.periodSwitch{display:flex;align-items:center;gap:2px;padding:3px;background:#0f0f0f;border:1px solid #272727;border-radius:10px}
+.periodSwitch button{border:0;background:transparent;color:#707070;border-radius:7px;padding:7px 9px;font-size:10px;font-weight:700;transition:background .16s ease,color .16s ease,transform .16s ease}
+.periodSwitch button:hover{color:#ddd}
+.periodSwitch button.active{background:#fff;color:#000;box-shadow:0 4px 14px rgba(255,255,255,.08)}
+.clockHint{color:#666;font-size:9px;line-height:1.4;padding:1px 2px 8px;text-align:center}
+.clockFace.interactive{position:relative;width:min(250px,calc(100vw - 86px));aspect-ratio:1/1;height:auto;margin:8px auto 13px;border:1px solid #262626;border-radius:50%;background:radial-gradient(circle at 50% 44%,#1a1a1a 0,#111 46%,#0a0a0a 72%,#070707 100%);box-shadow:inset 0 0 0 7px rgba(255,255,255,.017),inset 0 0 35px rgba(255,255,255,.025),0 18px 36px rgba(0,0,0,.42),0 0 0 1px rgba(139,92,246,.06);cursor:crosshair;user-select:none;touch-action:none;transition:box-shadow .22s ease,transform .22s ease}
+.clockFace.interactive::after{content:"";position:absolute;inset:13px;border-radius:50%;border:1px solid rgba(255,255,255,.035);pointer-events:none}
+.clockFace.interactive:hover{box-shadow:inset 0 0 0 7px rgba(255,255,255,.022),inset 0 0 35px rgba(255,255,255,.03),0 20px 44px rgba(0,0,0,.48),0 0 0 1px rgba(139,92,246,.12)}
+.clockTicks{position:absolute;inset:0;border-radius:50%;pointer-events:none}
+.clockTicks span{position:absolute;left:50%;top:50%;width:1px;height:5px;margin-left:-.5px;margin-top:-2.5px;background:#3c3c3c;transform-origin:50% 0;opacity:.75}
+.clockTicks span.major{height:8px;width:2px;margin-left:-1px;background:#656565}
+.clockCenter{position:absolute;left:50%;top:50%;width:13px;height:13px;border:1px solid rgba(255,255,255,.35);background:#fff;border-radius:50%;transform:translate(-50%,-50%);z-index:5;box-shadow:0 0 0 5px rgba(255,255,255,.04),0 0 20px rgba(255,255,255,.16)}
+.clockCenter span{position:absolute;inset:2px;background:#9b7bff;border-radius:50%;box-shadow:0 0 10px rgba(155,123,255,.65)}
+.clockHand{position:absolute;left:50%;top:50%;width:3px;height:77px;background:linear-gradient(180deg,#fff,#c8c8c8);transform-origin:50% 100%;border-radius:99px;z-index:4;box-shadow:0 0 10px rgba(255,255,255,.12);transition:transform .18s cubic-bezier(.2,.9,.2,1)}
+.clockHand::after{content:"";position:absolute;left:50%;top:-5px;width:10px;height:10px;border-radius:50%;background:#fff;transform:translateX(-50%);box-shadow:0 0 14px rgba(255,255,255,.18)}
+.clockNumber{position:absolute;width:36px;height:36px;border:1px solid transparent;border-radius:50%;background:rgba(255,255,255,0);color:#858585;font-size:10px;font-weight:650;display:grid;place-items:center;cursor:pointer;z-index:6;transition:background .15s ease,color .15s ease,border-color .15s ease,transform .18s cubic-bezier(.2,.9,.2,1),box-shadow .18s ease}
+.clockNumber:hover{background:#1c1c1c;color:#fff;border-color:#373737;transform:scale(1.08)}
+.clockNumber.selected{background:#fff;color:#050505;border-color:#fff;box-shadow:0 7px 20px rgba(255,255,255,.13),0 0 0 5px rgba(255,255,255,.04);transform:scale(1.09)}
+.clockFace.minute .clockNumber.selected{box-shadow:0 7px 20px rgba(34,211,238,.11),0 0 0 5px rgba(34,211,238,.035)}
+.clockFace.minute .clockCenter span{background:#22d3ee;box-shadow:0 0 10px rgba(34,211,238,.6)}
+.timePickerFooter{display:flex;align-items:center;justify-content:flex-end;gap:8px;border-top:1px solid #1f1f1f;padding-top:11px}
+.timeClear{flex:1;width:auto;border:1px solid #272727;background:#0f0f0f;color:#777;border-radius:10px;padding:9px 10px;font-size:10px;cursor:pointer;transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease}
+.timeClear:hover{background:#181818;color:#fff;border-color:#424242;transform:translateY(-1px)}
+.timeDone{border:1px solid #fff;background:#fff;color:#050505;border-radius:10px;padding:9px 14px;font-size:10px;font-weight:700;cursor:pointer;box-shadow:0 7px 18px rgba(255,255,255,.08);transition:transform .16s ease,box-shadow .16s ease}
+.timeDone:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(255,255,255,.13)}
+:root[data-theme="light"] .timePicker.timePickerFloating{border-color:#dfe3eb;background:radial-gradient(circle at 18% 8%,rgba(124,77,255,.11),transparent 30%),linear-gradient(180deg,#fff,#f7f8fb);box-shadow:0 32px 80px rgba(17,24,39,.18),0 0 0 1px rgba(17,24,39,.03)}
+:root[data-theme="light"] .timePickerHeader{border-color:#e7eaf0}:root[data-theme="light"] .timePickerHeader strong{color:#111827}
+:root[data-theme="light"] .timePickerClose{background:#f5f6f8;color:#667085;border-color:#dde2e9}:root[data-theme="light"] .timePickerClose:hover{background:#fff;color:#111;border-color:#c7ced8}
+:root[data-theme="light"] .timeStageSwitch,:root[data-theme="light"] .periodSwitch{background:#f4f5f7;border-color:#dfe3ea}
+:root[data-theme="light"] .timeStageSwitch button,:root[data-theme="light"] .periodSwitch button{color:#697386}
+:root[data-theme="light"] .timeStageSwitch button.active,:root[data-theme="light"] .periodSwitch button.active{background:#111;color:#fff}
+:root[data-theme="light"] .clockHint{color:#7a8498}
+:root[data-theme="light"] .clockFace.interactive{background:radial-gradient(circle at 50% 44%,#fbfbfc 0,#f3f4f6 55%,#fff 100%);border-color:#dfe3e9;box-shadow:inset 0 0 0 7px rgba(17,24,39,.018),inset 0 0 35px rgba(17,24,39,.03),0 18px 36px rgba(17,24,39,.08)}
+:root[data-theme="light"] .clockTicks span{background:#b8bec8}:root[data-theme="light"] .clockTicks span.major{background:#9299a6}
+:root[data-theme="light"] .clockCenter{background:#111;border-color:#111}:root[data-theme="light"] .clockCenter span{background:#8b5cf6}
+:root[data-theme="light"] .clockHand{background:linear-gradient(180deg,#111,#444)}:root[data-theme="light"] .clockHand::after{background:#111}
+:root[data-theme="light"] .clockNumber{color:#707987}:root[data-theme="light"] .clockNumber:hover{background:#e9ebef;color:#111;border-color:#d0d5dd}:root[data-theme="light"] .clockNumber.selected{background:#111;color:#fff;border-color:#111}
+:root[data-theme="light"] .timePickerFooter{border-color:#e7eaf0}:root[data-theme="light"] .timeClear{background:#f6f7f9;border-color:#dfe3ea;color:#697386}:root[data-theme="light"] .timeClear:hover{background:#fff;color:#111;border-color:#c9d0da}
+@media(max-width:650px){
+  .timePicker.timePickerFloating{width:calc(100vw - 16px)!important;padding:12px;border-radius:18px}
+  .clockFace.interactive{width:min(232px,calc(100vw - 72px))}
+}
+
+/* ORBIT v4 — compact, list-based time picker */
+.timeField{position:relative;min-width:0}
+.timeFieldButton{width:100%;min-height:50px;padding:0 10px 0 16px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(180deg,var(--panel2),#0f1423);color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 6px 18px #0002;transition:border-color .42s var(--ease),box-shadow .42s var(--ease),background .42s var(--ease),transform .42s var(--ease);}
+.timeFieldButton::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 0 38%,rgba(255,255,255,.035) 50%,transparent 62%);transform:translateX(-120%);transition:transform .45s ease;pointer-events:none}
+.timeFieldButton:hover{background:linear-gradient(180deg,var(--panel2),#111625);border-color:#9a7cf577;box-shadow:0 10px 24px #0003,0 0 0 3px #8b5cf614;transform:translateY(-1px)}
+.timeFieldButton:hover::after{transform:translateX(120%)}
+.timeFieldButton:active{transform:translateY(1px) scale(.997)}
+.timeFieldButton.open{border-color:#8b5cf655;box-shadow:0 0 0 3px #8b5cf612,0 12px 28px rgba(0,0,0,.18)}
+.timeFieldButton svg{color:#7a7a7a;flex:none;transition:transform .36s var(--ease),color .36s var(--ease)}
+.timeFieldButton.open svg{color:#b29cff;transform:rotate(10deg)}
+.timeValue{display:flex;flex-direction:column;gap:5px;min-width:0}
+.timeValue small{font-size:9px;letter-spacing:1.4px;font-weight:800;color:#666}
+.timeValue span{font-size:12px;font-weight:600;line-height:1;letter-spacing:.1px}
+.timeMenu{position:absolute;z-index:90;left:0;right:0;top:calc(100% + 10px);padding:10px;border:1px solid #2e2e2e;border-radius:14px;background:linear-gradient(180deg,#111,#090909);box-shadow:0 26px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.02);animation:orbit-time-menu-in .34s var(--popup-ease) both;transform-origin:top center}
+.timeMenuHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 7px 10px;border-bottom:1px solid #1f1f1f}
+.timeMenuHead .eyebrow{font-size:8px;letter-spacing:1.4px;color:#666}
+.timeMenuHead b{display:block;margin-top:3px;font-size:17px;letter-spacing:-.3px}
+.timeMenuClear{border:1px solid #272727;background:#141414;color:#8d8d8d;border-radius:8px;padding:7px 9px;font-size:11px;cursor:pointer;transition:background .35s var(--ease),color .35s var(--ease),border-color .35s var(--ease)}
+.timeMenuClear:hover:not(:disabled){background:#1c1c1c;color:#fff;border-color:#3b3b3b}.timeMenuClear:disabled{opacity:.35;cursor:default}
+.timeQuickRow{display:flex;gap:6px;overflow:auto;padding:9px 4px 8px;scrollbar-width:none}.timeQuickRow::-webkit-scrollbar{display:none}
+.timeQuickRow button{flex:0 0 auto;border:1px solid #252525;background:#101010;color:#999;border-radius:999px;padding:7px 9px;font-size:10px;cursor:pointer;transition:background .35s var(--ease),color .35s var(--ease),border-color .35s var(--ease),transform .35s var(--ease)}
+.timeQuickRow button:hover{background:#171717;color:#fff;border-color:#3a3a3a;transform:translateY(-1px)}
+.timeOptions{max-height:250px;overflow:auto;padding:3px 2px 2px;scrollbar-width:thin;scrollbar-color:#3a3a3a transparent}
+.timeOptions::-webkit-scrollbar{width:7px}.timeOptions::-webkit-scrollbar-track{background:transparent}.timeOptions::-webkit-scrollbar-thumb{background:#333;border-radius:99px}
+.timeOption{width:100%;display:flex;align-items:center;justify-content:space-between;border:1px solid transparent;background:transparent;color:#b2b2b2;border-radius:9px;padding:10px 11px;font-size:13px;text-align:left;cursor:pointer;transition:background .34s var(--ease),color .34s var(--ease),border-color .34s var(--ease),transform .34s var(--ease)}
+.timeOption:hover{background:#151515;color:#fff;border-color:#232323;transform:translateX(2px)}
+.timeOption.selected{background:rgba(139,92,246,.13);border-color:#8b5cf63c;color:#e9e1ff}.timeOption.selected svg{color:#a78bfa}
+@keyframes orbit-time-menu-in{from{opacity:0;transform:translateY(-7px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:760px){.timeMenu{left:auto;right:0;width:min(280px,calc(100vw - 32px))}}
+@media(prefers-reduced-motion:reduce){.timeMenu,.timeFieldButton,.timeQuickRow button,.timeOption{animation:none!important;transition:none!important}}
+
+/* Slower, calmer interaction rhythm across ORBIT */
+:root{--orbit-motion:1.35}
+.overlay{animation-duration:calc(var(--popup-duration) * var(--orbit-motion))}
+.overlay > .modal,.settingsOverlay > .settingsDetail,.authOverlay > .authModal{animation-duration:calc(.30s * var(--orbit-motion))}
+.profileMenu,.dropdownMenu,.searchResults,.datePicker{animation-duration:calc(.22s * var(--orbit-motion))}
+.page,.selectedDayPanel,.focusCard,.tablePanel,.subjectTaskPanel,.pdfPanel{animation-duration:calc(.42s * var(--orbit-motion));}
+.taskRow,.subjectCard,.stat,.panel,.settingRow,.nav,.iconbtn,.primary,.secondary,.google,.dropdownTrigger,.dateFieldButton,.timeFieldButton{transition-duration:.42s!important}
+@media(prefers-reduced-motion:reduce){:root{--orbit-motion:1}.taskRow,.subjectCard,.stat,.panel,.settingRow,.nav,.iconbtn,.primary,.secondary,.google,.dropdownTrigger,.dateFieldButton,.timeFieldButton{transition-duration:.01ms!important}}
