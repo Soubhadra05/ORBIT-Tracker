@@ -2339,3 +2339,118 @@ main>.page,
 .sessionModal .modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
 .sessionModal .modalActions button{min-height:44px}
 @media(max-width:560px){.sessionModal{padding:20px}.sessionModal .modalActions{display:grid;grid-template-columns:1fr 1fr}.sessionModal .modalActions button{width:100%}}
+
+/* Focus activity history + manual session timing */
+.sessionModal{max-width:720px}
+.sessionFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.sessionFields label{min-width:0}
+.sessionDurationField{grid-column:1/-1}
+.sessionCalc{display:flex;align-items:center;gap:10px;margin-top:18px;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);color:var(--muted);font-size:14px}
+.sessionCalc svg{flex:0 0 auto;color:#a78bfa}
+.sessionCalc b{color:var(--text)}
+.sessionHistoryModal{width:min(760px,calc(100vw - 32px));max-height:min(760px,calc(100vh - 32px));overflow:auto}
+.historyDateLabel{margin:6px 0 0;color:var(--muted);font-size:14px}
+.historyDateBar{display:flex;align-items:center;gap:10px;margin:8px 0 18px}
+.historyDateBar .mini{width:42px;height:42px;padding:0;justify-content:center;font-size:24px;line-height:1}
+.historyDateInput{flex:1;min-width:0;height:42px}
+.historyToday{height:42px;white-space:nowrap}
+.historySummary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.historySummary>div{padding:15px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);display:flex;flex-direction:column;gap:5px}
+.historySummary span{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.historySummary b{font-size:20px;color:var(--text)}
+.sessionHistoryList{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface)}
+.historySession{display:grid;grid-template-columns:110px 24px 1fr;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid var(--border)}
+.historySession:last-child{border-bottom:0}
+.historyTime{display:flex;flex-direction:column;gap:4px}
+.historyTime b{font-size:16px;color:var(--text)}
+.historyTime span{font-size:12px;color:var(--muted)}
+.historyLine{height:44px;display:flex;justify-content:center;position:relative}
+.historyLine:before{content:"";position:absolute;top:0;bottom:0;width:1px;background:var(--border)}
+.historyLine i{width:9px;height:9px;border-radius:50%;background:#a78bfa;border:2px solid var(--surface);box-shadow:0 0 0 1px #a78bfa;z-index:1;margin-top:18px}
+.historySessionInfo{display:flex;flex-direction:column;gap:5px;min-width:0}
+.historySessionInfo b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.historySessionInfo span{font-size:13px;color:var(--muted)}
+.historyEmpty{padding:44px 24px;display:flex;align-items:center;flex-direction:column;text-align:center;gap:7px;color:var(--muted)}
+.historyEmpty b{color:var(--text);font-size:15px}
+.historyEmptyIcon{width:42px;height:42px;border-radius:12px;border:1px solid var(--border);display:grid;place-items:center;margin-bottom:5px;color:#a78bfa;background:var(--surface2)}
+@media(max-width:620px){.sessionFields{grid-template-columns:1fr}.sessionDurationField{grid-column:auto}.historySummary{grid-template-columns:1fr 1fr}.historySummary>div:last-child{grid-column:1/-1}.historySession{grid-template-columns:82px 18px 1fr;padding:16px 14px;gap:9px}.historyDateBar{flex-wrap:wrap}.historyDateInput{order:1;flex-basis:calc(100% - 104px)}.historyToday{order:2}.historyDateBar .mini{order:0}}
+
+/* Dashboard activity history + momentum polish */
+.historyDateBar{display:grid;grid-template-columns:44px minmax(0,1fr) 44px auto;align-items:center;gap:10px;margin:12px 0 20px}
+.historyDateBar .mini,.historyToday,.historyDateInput{height:48px;box-sizing:border-box}
+.historyDateBar .mini{width:44px;min-width:44px;padding:0;display:grid;place-items:center;border-radius:12px;font-size:22px}
+.historyDateInput{width:100%;margin:0!important;padding:0 14px!important;border-radius:12px!important}
+.historyToday{min-width:86px;padding:0 16px!important;border-radius:12px!important}
+.momentumModal{width:min(520px,calc(100vw - 32px));padding:24px}
+.streakStats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+.streakStats>div{padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);display:flex;flex-direction:column;gap:6px}
+.streakStats span,.streakRequirement>span{font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);font-weight:600}
+.streakStats b{font-size:24px;color:var(--text)}
+.streakRequirement{display:grid;gap:8px;margin:0!important}
+.streakInput{display:flex;align-items:center;gap:10px;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:4px 14px 4px 16px;min-height:52px;box-sizing:border-box}
+.streakInput input{border:0!important;background:transparent!important;margin:0!important;padding:0!important;min-width:0;font-size:20px;font-weight:600;color:var(--text)}
+.streakInput b{font-size:13px;color:var(--muted);white-space:nowrap}
+.streakRequirement small{font-size:12px;color:var(--muted);line-height:1.5}
+.streakPreview{display:flex;align-items:center;gap:9px;margin-top:16px;padding:12px 14px;border:1px solid rgba(167,139,250,.2);background:rgba(167,139,250,.06);border-radius:12px;color:var(--muted);font-size:13px}
+.streakPreview svg{color:#a78bfa}
+.streakPreview b{color:var(--text)}
+@media(max-width:620px){.historyDateBar{grid-template-columns:42px minmax(0,1fr) 42px}.historyToday{grid-column:1/-1;width:100%}.streakStats{grid-template-columns:1fr 1fr}.momentumModal{padding:20px}}
+
+/* v13 — activity history + momentum alignment polish */
+.historyDateBar{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) 48px 88px;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  margin:16px 0 20px;
+}
+.historyDatePicker{min-width:0;position:relative;z-index:20}
+.historyDatePicker .dateField{width:100%}
+.historyDatePicker .dateFieldButton{
+  width:100%;
+  min-height:48px;
+  height:48px;
+  box-sizing:border-box;
+  border-radius:13px;
+}
+.historyDatePicker .datePicker{z-index:90}
+.historyDateBar .historyNav,
+.historyDateBar .historyToday{
+  height:48px;
+  min-height:48px;
+  box-sizing:border-box;
+  margin:0;
+  display:grid;
+  place-items:center;
+  border-radius:13px;
+}
+.historyDateBar .historyNav{width:48px;padding:0;font-size:25px;line-height:1}
+.historyDateBar .historyToday{width:88px;padding:0;font-size:13px;font-weight:600}
+.historySummary{margin-top:0}
+
+/* Keep the momentum modal visually aligned with the rest of the ORBIT system. */
+.momentumModal .modalHead{margin-bottom:4px}
+.momentumModal .settingsHint{max-width:620px;margin:10px 0 24px;line-height:1.65}
+.streakStats{margin:0 0 22px}
+.streakStats>div{min-height:92px;box-sizing:border-box;justify-content:center}
+.streakRequirement{gap:9px}
+.streakInput{width:100%;min-height:50px}
+.momentumModal .modalActions{
+  display:grid;
+  grid-template-columns:minmax(110px,auto) minmax(0,1fr);
+  justify-content:end;
+  align-items:stretch;
+  gap:10px;
+  margin-top:20px;
+}
+.momentumModal .modalActions button{min-height:48px}
+.momentumModal .modalActions .primary{min-width:0}
+
+@media(max-width:620px){
+  .historyDateBar{grid-template-columns:44px minmax(0,1fr) 44px;gap:8px}
+  .historyDateBar .historyNav{width:44px}
+  .historyDateBar .historyToday{grid-column:1/-1;width:100%}
+  .historyDatePicker .dateFieldButton{height:48px;min-height:48px}
+  .momentumModal .modalActions{grid-template-columns:1fr 1fr}
+}

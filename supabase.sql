@@ -45,12 +45,16 @@ create table if not exists public.study_sessions (
   subject_id uuid references public.subjects(id) on delete set null,
   minutes int not null,
   session_date date default current_date,
+  start_time text,
+  end_time text,
   note text default ''
 );
 
 alter table public.tasks alter column title drop not null;
 alter table public.tasks add column if not exists google_event_id text;
 alter table public.tasks add column if not exists start_time text;
+alter table public.study_sessions add column if not exists start_time text;
+alter table public.study_sessions add column if not exists end_time text;
 alter table public.tasks add column if not exists end_time text;
 
 alter table public.subjects enable row level security;
