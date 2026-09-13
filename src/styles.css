@@ -2454,3 +2454,24 @@ main>.page,
   .historyDatePicker .dateFieldButton{height:48px;min-height:48px}
   .momentumModal .modalActions{grid-template-columns:1fr 1fr}
 }
+
+/* Focus session save/delete polish */
+.historySession{grid-template-columns:110px 24px minmax(0,1fr) 38px}
+.historyDelete{justify-self:end;width:34px;height:34px;display:grid;place-items:center;padding:0;border:1px solid transparent;color:var(--muted)}
+.historyDelete:hover{color:#f87171;background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.22)}
+.focusResetOverlay{z-index:1400}
+.focusResetModal{width:min(560px,calc(100vw - 32px));padding:26px}
+.focusResetModal .modalHead{margin-bottom:8px}
+.focusResetSummary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0}
+.focusResetSummary>div{min-width:0;padding:15px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);display:flex;flex-direction:column;gap:6px}
+.focusResetSummary span{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--muted)}
+.focusResetSummary b{font-size:15px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.focusResetModal .modalActions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:24px}
+.focusResetActions button{height:48px;min-height:48px;padding:0 18px;border-radius:12px!important;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:650;letter-spacing:-.01em;white-space:nowrap}
+.focusResetActions .focusResetDiscard{min-width:118px;background:transparent!important;color:var(--text)!important;border:1px solid var(--border)!important;box-shadow:none!important}
+.focusResetActions .focusResetDiscard:hover{background:var(--surface2)!important;border-color:#444!important;transform:translateY(-1px)}
+.focusResetActions .focusResetSave{min-width:150px;background:#fff!important;color:#050505!important;border:1px solid #fff!important;box-shadow:0 8px 24px rgba(255,255,255,.07)!important}
+.focusResetActions .focusResetSave:hover{background:#ededed!important;transform:translateY(-1px);box-shadow:0 12px 30px rgba(255,255,255,.1)!important}
+.focusResetActions button:active{transform:translateY(0) scale(.985)!important}
+.focusResetActionHint{margin-top:10px;text-align:right;color:var(--muted);font-size:11px;line-height:1.4}
+@media(max-width:620px){.historySession{grid-template-columns:82px 18px minmax(0,1fr) 34px;padding:16px 14px;gap:9px}.focusResetSummary{grid-template-columns:1fr 1fr}.focusResetModal .modalActions{display:grid;grid-template-columns:1fr 1fr}.focusResetActions button{width:100%;min-width:0}.focusResetActionHint{text-align:center}}
