@@ -893,6 +893,29 @@ function Focus({timer,running,setRunning,setTimer,onLogSession,focusMode,setFocu
  <div className="timerActions"><button className="primary big" onClick={()=>setRunning(!running)}>{running?<Pause/>:<Play/>}{running?'Pause':'Start focus'}</button><button className="secondary" onClick={()=>{setRunning(false);setPreset(focusMode==='custom'?Number(customMinutes)||30:pomodoros*25,focusMode,pomodoros)}}><RotateCcw size={17}/> Reset</button></div><button type="button" className="manualSessionBtn" onClick={onLogSession}><Clock3 size={15}/><span>Log a session manually</span><ArrowUpRight size={14}/></button></div></section>}
 
 
+function SessionModal({subjects,defaultMinutes,onClose,onSave}){
+ const [minutes,setMinutes]=useState(String(defaultMinutes||25));
+ const [subjectId,setSubjectId]=useState('');
+ const [date,setDate]=useState(localDateKey(new Date()));
+ const submit=e=>{e.preventDefault();const mins=Math.max(1,Math.round(Number(minutes)||1));onSave(mins,subjectId||null,date)};
+ return <div className="overlay sessionOverlay" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
+  <form className="modal sessionModal" onSubmit={submit} onMouseDown={e=>e.stopPropagation()}>
+   <div className="modalHead">
+    <div><span className="eyebrow">FOCUS LOG</span><h2>Log a session</h2></div>
+    <button className="iconbtn" type="button" onClick={onClose} aria-label="Close session dialog"><X/></button>
+   </div>
+   <p className="settingsHint">Add a completed study or focus session to your activity history.</p>
+   <div className="sessionFields">
+    <label><span>Minutes</span><input className="input" type="number" min="1" max="1440" value={minutes} onChange={e=>setMinutes(e.target.value)} autoFocus/></label>
+    <label><span>Subject <small>(optional)</small></span><div className="selectWrap"><select className="input" value={subjectId} onChange={e=>setSubjectId(e.target.value)}><option value="">No subject</option>{subjects.map(s=><option value={s.id} key={s.id}>{s.name}{s.code?` · ${s.code}`:''}</option>)}</select><ChevronDown size={16}/></div></label>
+    <label><span>Date</span><input className="input" type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+   </div>
+   <div className="modalActions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button type="submit" className="primary"><Clock3 size={16}/> Log session</button></div>
+  </form>
+ </div>
+}
+
+
 function AuthModal({cloudReady,onClose,onGoogle}){
  return <div className="overlay authOverlay" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
   <div className="modal authModal" onMouseDown={e=>e.stopPropagation()}>

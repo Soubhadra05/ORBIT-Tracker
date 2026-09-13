@@ -2323,3 +2323,19 @@ main>.page,
 .timetableActions .seriesDeleteIcon:hover{color:#f87171!important;border-color:#5a3030!important;background:rgba(248,113,113,.07)!important}
 .timetableActions .cancelClassBtn{min-width:76px!important;height:34px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;border-radius:10px!important;font-size:9px!important}
 @media(max-width:760px){.timetableActions{flex-wrap:wrap}.timetableActions .seriesDeleteIcon{display:inline-flex!important}.timetableActions .cancelClassBtn{min-width:34px!important}.timetableActions .cancelClassBtn span{display:none!important}}
+
+/* Manual focus session modal */
+.sessionOverlay{z-index:1200}
+.sessionModal{width:min(520px,calc(100vw - 32px));padding:24px}
+.sessionModal .modalHead{margin-bottom:8px}
+.sessionFields{display:grid;gap:14px;margin-top:22px}
+.sessionFields label{display:grid;gap:7px}
+.sessionFields label>span{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#8b8b8b)}
+.sessionFields label small{font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;opacity:.72}
+.sessionFields .input{width:100%;min-height:48px;box-sizing:border-box}
+.selectWrap{position:relative}
+.selectWrap select{appearance:none;padding-right:42px}
+.selectWrap svg{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:.65}
+.sessionModal .modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.sessionModal .modalActions button{min-height:44px}
+@media(max-width:560px){.sessionModal{padding:20px}.sessionModal .modalActions{display:grid;grid-template-columns:1fr 1fr}.sessionModal .modalActions button{width:100%}}
