@@ -6,6 +6,73 @@
 
 ORBIT Tracker is a responsive React/Vite productivity application designed to keep planning simple and calm. It is intentionally neutral: use it for school, college, work, projects, personal goals, or anything else you want to organize.
 
+
+## ⭐ Why ORBIT Stands Out
+
+Most task trackers are built around a simple loop: **create a task → check it off**.  
+ORBIT is designed around the bigger picture: **what you need to do, when you need to do it, when you actually focused, and what your real-world schedule looks like**.
+
+Instead of forcing everything into a generic to-do list, ORBIT brings **tasks + calendar + timetable + focus tracking + recurring classes + cloud sync** into one workspace.
+
+### What makes ORBIT different
+
+| Capability | ORBIT Tracker | Typical task tracker |
+|---|---|---|
+| Tasks | Full task lifecycle with editing, priorities, tags, scheduling and completion | Usually task-first |
+| Scheduling | Start/end dates and times, including overnight tasks | Often deadline-focused |
+| Calendar | Built-in calendar views + Google Calendar sync | Often separate or limited |
+| Class timetable | Import a school/college timetable and generate recurring classes | Rarely included |
+| Timetable OCR | Detect classes from timetable images and let you review them before import | Usually unavailable |
+| Flexible class ranges | Different start/end dates for individual classes | Usually unavailable |
+| Last-minute cancellation | Cancel one class occurrence without deleting the entire series | Rare |
+| Series management | Update or delete future occurrences together | Often requires manual changes |
+| Focus tracking | Pomodoro timer + manual sessions + actual start/end history | Varies |
+| Activity history | Inspect logged study sessions for a selected day | Often basic totals only |
+| Local-first usage | Core workspace can work without an account | Often account-first |
+| Privacy-friendly OCR | Timetable image OCR runs in the browser | Often cloud-dependent |
+| Cloud sync | Supabase-backed personal workspace | Depends on the app |
+| Google Calendar | Timed and all-day task/class synchronization | Varies |
+| Subjects / projects | Dedicated progress, targets, notes and task views | Often secondary |
+| Customization | Themes, density, categories, accent colors and focus preferences | Varies |
+
+### The standout workflow
+
+**1. Import your real schedule**  
+Upload a timetable image or CSV instead of manually entering every class.
+
+**2. Review before committing**  
+OCR-detected classes are presented for editing and selection, so you remain in control of what gets added.
+
+**3. Generate the semester schedule**  
+Set term dates and individual class date ranges. ORBIT creates the recurring occurrences for you.
+
+**4. Keep reality in sync**  
+If a class is cancelled at the last minute, cancel that occurrence without destroying the rest of the series.
+
+**5. Plan your work around your classes**  
+Tasks can have start/end dates and times, including schedules that cross midnight such as **11:00 PM → 1:00 AM**.
+
+**6. Track what actually happened**  
+Focus sessions record the time you really spent working. Manual sessions can use explicit start/end times, and the activity history lets you inspect a selected day's sessions.
+
+**7. Keep your external calendar updated**  
+Tasks and scheduled classes can be synchronized with Google Calendar so your planning does not stay trapped inside ORBIT.
+
+### Built for real schedules, not just checklists
+
+ORBIT is especially useful when your day changes frequently. A task tracker tells you **what** needs to happen; ORBIT also helps answer:
+
+- **When is it happening?**
+- **Does it conflict with my class?**
+- **How long is it scheduled for?**
+- **What did I actually study today?**
+- **Which class was cancelled?**
+- **What happens to the rest of a recurring class series if the schedule changes?**
+- **Can my Google Calendar stay in sync with my workspace?**
+
+That combination is the core idea behind ORBIT: **one workspace that connects planning, scheduling, execution, and reflection.**
+
+
 ## ✨ Features
 
 ### 📊 Dashboard
