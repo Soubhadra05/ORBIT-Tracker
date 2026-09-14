@@ -2458,6 +2458,9 @@ main>.page,
 /* Focus session save/delete polish */
 .historySession{grid-template-columns:110px 24px minmax(0,1fr) 38px}
 .historyDelete{justify-self:end;width:34px;height:34px;display:grid;place-items:center;padding:0;border:1px solid transparent;color:var(--muted)}
+.historySessionActions{justify-self:end;display:flex;align-items:center;gap:4px}
+.historySessionActions .iconbtn{width:34px;height:34px;padding:0;display:grid;place-items:center;border:1px solid transparent;color:var(--muted)}
+.historySessionActions .historyEdit:hover{color:var(--text);background:var(--surface2);border-color:var(--border)}
 .historyDelete:hover{color:#f87171;background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.22)}
 .focusResetOverlay{z-index:1400}
 .focusResetModal{width:min(560px,calc(100vw - 32px));padding:26px}
