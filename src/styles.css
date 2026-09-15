@@ -815,7 +815,7 @@ button:disabled{cursor:not-allowed!important;opacity:.45;transform:none!importan
 /* Focus: calm pulse while running; no flashy neon. */
 .focusCard{transition:border-color .25s ease,box-shadow .25s ease,transform .25s var(--ease)!important}
 .focusCard.isRunning{border-color:#3b3b3b!important;box-shadow:0 0 0 1px rgba(255,255,255,.025),0 24px 70px rgba(0,0,0,.38)!important}
-.focusCard.isRunning .timer{animation:orbit-breathe 2.8s ease-in-out infinite}
+.focusCard.isRunning .timer{animation:orbit-breathe 3.696s ease-in-out infinite}
 .focusOption:hover{transform:translateY(-2px)!important;border-color:#444!important;background:#101010!important}
 .focusOption.selected{border-color:#555!important;background:#111!important;box-shadow:inset 0 0 0 1px #333!important}
 .manualSessionBtn{color:#888!important;border-color:transparent!important}
@@ -2523,3 +2523,5 @@ main>.page,
   .historyDateBar .historyToday{width:100% !important;min-width:0 !important;}
   .historyDateBar .historyDatePicker .dateFieldButton{height:48px !important;min-height:48px !important;}
 }
+
+/* ORBIT v21 — slower, smoother motion pass. Existing motion timings are intentionally eased up slightly for a calmer, more polished feel. */
