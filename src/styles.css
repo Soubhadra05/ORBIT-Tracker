@@ -2405,6 +2405,36 @@ main>.page,
   width:100%;
   margin:16px 0 20px;
 }
+
+/* Unified activity-history controls: every control shares one exact height. */
+.historyDateBar .historyNav,
+.historyDateBar .historyToday,
+.historyDateBar .historyDatePicker .dateFieldButton{
+  height:48px !important;
+  min-height:48px !important;
+  box-sizing:border-box;
+}
+.historyDateBar .historyNav{
+  width:48px !important;
+  min-width:48px;
+  padding:0 !important;
+  display:grid !important;
+  place-items:center;
+  line-height:1;
+}
+.historyDateBar .historyToday{
+  width:88px !important;
+  min-width:88px;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+}
+.historyDateBar .historyDatePicker .dateFieldButton{
+  width:100%;
+  display:flex !important;
+  align-items:center !important;
+}
 .historyDatePicker{min-width:0;position:relative;z-index:20}
 .historyDatePicker .dateField{width:100%}
 .historyDatePicker .dateFieldButton{
@@ -2458,9 +2488,6 @@ main>.page,
 /* Focus session save/delete polish */
 .historySession{grid-template-columns:110px 24px minmax(0,1fr) 38px}
 .historyDelete{justify-self:end;width:34px;height:34px;display:grid;place-items:center;padding:0;border:1px solid transparent;color:var(--muted)}
-.historySessionActions{justify-self:end;display:flex;align-items:center;gap:4px}
-.historySessionActions .iconbtn{width:34px;height:34px;padding:0;display:grid;place-items:center;border:1px solid transparent;color:var(--muted)}
-.historySessionActions .historyEdit:hover{color:var(--text);background:var(--surface2);border-color:var(--border)}
 .historyDelete:hover{color:#f87171;background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.22)}
 .focusResetOverlay{z-index:1400}
 .focusResetModal{width:min(560px,calc(100vw - 32px));padding:26px}
@@ -2479,392 +2506,20 @@ main>.page,
 .focusResetActionHint{margin-top:10px;text-align:right;color:var(--muted);font-size:11px;line-height:1.4}
 @media(max-width:620px){.historySession{grid-template-columns:82px 18px minmax(0,1fr) 34px;padding:16px 14px;gap:9px}.focusResetSummary{grid-template-columns:1fr 1fr}.focusResetModal .modalActions{display:grid;grid-template-columns:1fr 1fr}.focusResetActions button{width:100%;min-width:0}.focusResetActionHint{text-align:center}}
 
-/* ORBIT subject syllabus + resources */
-.syllabusPanel{width:100%;margin:0;padding:20px;min-height:300px;box-sizing:border-box;animation:orbit-fade-up .42s var(--ease) both}.syllabusPanel .panelHead{align-items:flex-start}.syllabusPanel .panelHead>div:first-child{min-width:0;flex:1}.syllabusHeaderActions{display:flex;align-items:flex-start;gap:8px}.syllabusSummary{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.syllabusSummary span{padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--muted);font-size:10px}.syllabusSummary b{color:var(--text);font-weight:650}.chapterAddRow,.topicAddRow{display:flex;gap:8px;align-items:center}.chapterAddRow{margin:14px 0 16px}.chapterAddRow input,.topicAddRow input{flex:1;min-width:0}.syllabusList{display:grid;gap:12px}.syllabusChapter{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:14px}.syllabusChapterHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.syllabusChapterTitle{min-width:0;flex:1}.chapterNumber{display:block;color:var(--muted);font-size:9px;letter-spacing:.08em;margin-bottom:4px}.syllabusChapter h3{font-size:15px;margin:0;line-height:1.35}.syllabusChapterActions{display:flex;gap:2px}.syllabusTopics{display:grid;gap:4px;margin:12px 0 10px}.syllabusTopic{display:flex;align-items:center;gap:8px;padding:8px 6px;border-radius:9px}.syllabusTopic:hover{background:rgba(255,255,255,.025)}.syllabusTopic .check{flex:none}.syllabusTopicTitle{flex:1;min-width:0;font-size:12px;color:var(--text);cursor:text}.syllabusTopicDone .syllabusTopicTitle{text-decoration:line-through;color:var(--muted)}.syllabusTopicEdit,.syllabusChapterEdit{flex:1;min-width:0;margin:0!important}.syllabusEmpty{padding:10px 6px;color:var(--muted);font-size:11px}.syllabusEmpty.large{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--line);border-radius:12px}.syllabusEmpty.large svg{color:var(--muted)}.pdfList{display:grid;gap:8px}.pdfCard{display:flex;align-items:center;gap:10px}.pdfInfo{min-width:0;flex:1}.pdfInfo b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pdfActions{display:flex;gap:2px}.pdfIntro{margin:5px 0 0!important;max-width:680px}.hiddenFileInput{display:none}.pdfStorageHint{margin-top:14px}.syllabusPanel .panelHead,.pdfPanel .panelHead{gap:14px}.syllabusPanel .panelHead>div:first-child,.pdfPanel .panelHead>div:first-child{min-width:0;flex:1}@media(max-width:650px){.syllabusPanel{padding:13px;min-height:300px}.syllabusHeaderActions{width:100%}.syllabusHeaderActions button{width:100%;justify-content:center}.chapterAddRow,.topicAddRow{align-items:stretch}.chapterAddRow{flex-direction:column}.topicAddRow{flex-direction:row}.topicAddRow button{white-space:nowrap}.syllabusPanel .panelHead,.pdfPanel .panelHead{align-items:stretch}.syllabusSummary{margin:10px 0}.syllabusChapter{padding:11px}}
 
-/* =========================================================
-   ORBIT syllabus composer polish
-   Keep chapter/topic controls consistent with the app theme.
-   ========================================================= */
-.syllabusPanel .chapterAddRow,
-.syllabusPanel .topicAddRow{display:flex;align-items:center;gap:10px}
-
-.syllabusPanel .chapterAddRow input,
-.syllabusPanel .topicAddRow input,
-.syllabusPanel .syllabusChapterEdit,
-.syllabusPanel .syllabusTopicEdit{
-  appearance:none;
-  -webkit-appearance:none;
-  width:100%;
-  min-width:0;
-  height:44px;
-  padding:0 13px;
-  border:1px solid #2b2b2b!important;
-  border-radius:11px!important;
-  outline:none!important;
-  background:#0b0b0b!important;
-  color:#f5f5f5!important;
-  caret-color:#fff;
-  font-size:13px;
-  line-height:44px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.015),0 1px 0 rgba(255,255,255,.02);
-  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease,transform .18s ease;
+/* FINAL — keep Activity History date controls perfectly aligned across overrides. */
+.historyDateBar .historyNav,
+.historyDateBar .historyToday,
+.historyDateBar .historyDatePicker .dateFieldButton{
+  height:48px !important;
+  min-height:48px !important;
+  box-sizing:border-box !important;
 }
-.syllabusPanel .chapterAddRow input{height:48px;font-size:14px}
-.syllabusPanel .chapterAddRow input::placeholder,
-.syllabusPanel .topicAddRow input::placeholder,
-.syllabusPanel .syllabusChapterEdit::placeholder,
-.syllabusPanel .syllabusTopicEdit::placeholder{color:#666!important;opacity:1}
-.syllabusPanel .chapterAddRow input:hover,
-.syllabusPanel .topicAddRow input:hover,
-.syllabusPanel .syllabusChapterEdit:hover,
-.syllabusPanel .syllabusTopicEdit:hover{border-color:#3a3a3a!important;background:#0e0e0e!important}
-.syllabusPanel .chapterAddRow input:focus,
-.syllabusPanel .topicAddRow input:focus,
-.syllabusPanel .syllabusChapterEdit:focus,
-.syllabusPanel .syllabusTopicEdit:focus{
-  border-color:#555!important;
-  background:#0d0d0d!important;
-  box-shadow:0 0 0 3px rgba(255,255,255,.045),inset 0 0 0 1px rgba(255,255,255,.02)!important;
-}
-
-.syllabusPanel .chapterAddRow .primary,
-.syllabusPanel .topicAddRow .secondary,
-.syllabusPanel .syllabusHeaderActions .secondary{
-  height:44px;
-  min-height:44px;
-  padding:0 15px;
-  border-radius:11px;
-  white-space:nowrap;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  font-size:12px;
-  font-weight:600;
-  transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;
-}
-.syllabusPanel .chapterAddRow .primary{height:48px;min-height:48px}
-.syllabusPanel .chapterAddRow .primary:not(:disabled):hover,
-.syllabusPanel .topicAddRow .secondary:not(:disabled):hover,
-.syllabusPanel .syllabusHeaderActions .secondary:not(:disabled):hover{transform:translateY(-1px)}
-.syllabusPanel .chapterAddRow .primary:active,
-.syllabusPanel .topicAddRow .secondary:active,
-.syllabusPanel .syllabusHeaderActions .secondary:active{transform:scale(.985)}
-.syllabusPanel .chapterAddRow button:disabled,
-.syllabusPanel .topicAddRow button:disabled{opacity:.42;cursor:not-allowed;transform:none}
-
-.syllabusChapter{overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.08)}
-.syllabusChapterHead{padding-bottom:2px}
-.syllabusChapterTitle h3{letter-spacing:-.01em}
-.syllabusChapterActions .iconbtn,
-.syllabusTopic .iconbtn{
-  width:32px;height:32px;min-width:32px;padding:0;
-  display:grid;place-items:center;
-  border-radius:9px;
-  opacity:0;
-  transition:opacity .16s ease,background .16s ease,color .16s ease,transform .16s ease;
-}
-.syllabusChapter:hover .syllabusChapterActions .iconbtn,
-.syllabusTopic:hover .iconbtn,
-.syllabusChapterActions .iconbtn:focus-visible,
-.syllabusTopic .iconbtn:focus-visible{opacity:1}
-.syllabusChapterActions .iconbtn:hover,
-.syllabusTopic .iconbtn:hover{background:#171717;color:#fff;transform:translateY(-1px)}
-.syllabusTopic{min-height:42px;padding:5px 6px;border:1px solid transparent;transition:background .16s ease,border-color .16s ease}
-.syllabusTopic:hover{background:#111!important;border-color:#222}
-.syllabusTopic .check{width:22px;height:22px;border-radius:7px}
-.syllabusTopicTitle{font-size:12px;line-height:1.45}
-.syllabusTopicDone{opacity:.78}
-.syllabusTopicDone .check.done{box-shadow:0 0 0 3px rgba(52,211,153,.06)}
-
-.syllabusEmpty.large{background:rgba(255,255,255,.012)}
-.pdfStorageHint{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px}
-
-/* Light mode keeps the same hierarchy without the harsh native white fields. */
-:root[data-theme="light"] .syllabusPanel .chapterAddRow input,
-:root[data-theme="light"] .syllabusPanel .topicAddRow input,
-:root[data-theme="light"] .syllabusPanel .syllabusChapterEdit,
-:root[data-theme="light"] .syllabusPanel .syllabusTopicEdit{
-  background:#fff!important;
-  color:#17181b!important;
-  border-color:#d7dae2!important;
-  caret-color:#17181b;
-  box-shadow:inset 0 0 0 1px rgba(17,24,39,.015),0 1px 2px rgba(17,24,39,.03);
-}
-:root[data-theme="light"] .syllabusPanel .chapterAddRow input::placeholder,
-:root[data-theme="light"] .syllabusPanel .topicAddRow input::placeholder,
-:root[data-theme="light"] .syllabusPanel .syllabusChapterEdit::placeholder,
-:root[data-theme="light"] .syllabusPanel .syllabusTopicEdit::placeholder{color:#8a909d!important}
-:root[data-theme="light"] .syllabusPanel .chapterAddRow input:hover,
-:root[data-theme="light"] .syllabusPanel .topicAddRow input:hover,
-:root[data-theme="light"] .syllabusPanel .syllabusChapterEdit:hover,
-:root[data-theme="light"] .syllabusPanel .syllabusTopicEdit:hover{background:#fff!important;border-color:#c6cad4!important}
-:root[data-theme="light"] .syllabusPanel .chapterAddRow input:focus,
-:root[data-theme="light"] .syllabusPanel .topicAddRow input:focus,
-:root[data-theme="light"] .syllabusPanel .syllabusChapterEdit:focus,
-:root[data-theme="light"] .syllabusPanel .syllabusTopicEdit:focus{background:#fff!important;border-color:#9da3b0!important;box-shadow:0 0 0 3px rgba(124,77,255,.10)!important}
-:root[data-theme="light"] .syllabusTopic:hover{background:#f7f8fa!important;border-color:#e5e7eb}
-:root[data-theme="light"] .syllabusChapterActions .iconbtn:hover,
-:root[data-theme="light"] .syllabusTopic .iconbtn:hover{background:#f1f2f4;color:#17181b}
-
-@media(max-width:650px){
-  .syllabusPanel .chapterAddRow{flex-direction:column;align-items:stretch}
-  .syllabusPanel .chapterAddRow button{width:100%}
-  .syllabusPanel .topicAddRow{gap:7px}
-  .syllabusPanel .topicAddRow input{min-width:0}
-  .syllabusPanel .topicAddRow button{padding:0 12px}
-  .syllabusChapterActions .iconbtn,.syllabusTopic .iconbtn{opacity:1}
-}
-
-
-/* ============================================================
-   ORBIT MOTION SYSTEM — unified interaction language
-   Soft, quick, tactile. No excessive bouncing or flashy motion.
-   ============================================================ */
-:root{
-  --orbit-motion-fast: .14s;
-  --orbit-motion: .20s;
-  --orbit-motion-slow: .32s;
-  --orbit-ease: cubic-bezier(.22,1,.36,1);
-  --orbit-ease-soft: cubic-bezier(.16,1,.3,1);
-  --orbit-press: cubic-bezier(.2,.8,.2,1);
-}
-
-/* Make interactive elements feel like one design system. */
-button,
-.nav,
-.statClickable,
-.subjectCard,
-.addCard,
-.task,
-.calendarDayBtn,
-.calendarEvent,
-.resourceCard,
-.syllabusChapter,
-.syllabusTopic,
-.seg button,
-.check,
-.iconbtn,
-.dropdownTrigger,
-.searchResult,
-.profileMenu button,
-.modalActions button{
-  -webkit-tap-highlight-color: transparent;
-}
-
-button{
-  transition:
-    transform var(--orbit-motion) var(--orbit-ease),
-    background-color var(--orbit-motion) ease,
-    border-color var(--orbit-motion) ease,
-    color var(--orbit-motion) ease,
-    box-shadow var(--orbit-motion) ease,
-    opacity var(--orbit-motion) ease;
-}
-button:not(:disabled):hover{ transform:translateY(-1px); }
-button:not(:disabled):active{ transform:translateY(0) scale(.975); }
-button:disabled{ transition:opacity var(--orbit-motion) ease; }
-
-/* Navigation: calm slide, not a harsh state swap. */
-.nav{
-  position:relative;
-  overflow:hidden;
-  transition:
-    color var(--orbit-motion) var(--orbit-ease),
-    background-color var(--orbit-motion) var(--orbit-ease),
-    transform var(--orbit-motion) var(--orbit-ease);
-}
-.nav::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg,rgba(139,92,246,.10),transparent 65%);
-  transform:translateX(-105%);
-  transition:transform .34s var(--orbit-ease);
-  pointer-events:none;
-}
-.nav:hover::after,.nav.active::after{transform:translateX(0);}
-
-/* Page/content entrance: consistent across sections. */
-.page{
-  animation:orbit-page-enter .42s var(--orbit-ease) both;
-}
-@keyframes orbit-page-enter{
-  from{opacity:0;transform:translateY(6px)}
-  to{opacity:1;transform:none}
-}
-
-/* Cards share one tactile hover language. */
-.subjectCard,
-.addCard,
-.task,
-.statClickable,
-.calendarDayBtn{
-  transition:
-    transform .24s var(--orbit-ease),
-    border-color .24s ease,
-    background-color .24s ease,
-    box-shadow .24s var(--orbit-ease),
-    opacity .24s ease;
-}
-.subjectCard:hover,
-.addCard:hover,
-.task:hover{
-  transform:translateY(-2px);
-  border-color:color-mix(in srgb,var(--line) 70%,white 30%);
-}
-.subjectCard:active,
-.addCard:active,
-.task:active{transform:translateY(0) scale(.995);}
-
-/* Soft stagger when a page renders a group of cards. */
-.stats > *,.subjectGrid > *,.taskList > *,.calendarGrid > *{
-  animation:orbit-item-in .38s var(--orbit-ease) both;
-}
-.stats > *:nth-child(2),.subjectGrid > *:nth-child(2),.taskList > *:nth-child(2),.calendarGrid > *:nth-child(2){animation-delay:.035s}
-.stats > *:nth-child(3),.subjectGrid > *:nth-child(3),.taskList > *:nth-child(3),.calendarGrid > *:nth-child(3){animation-delay:.07s}
-.stats > *:nth-child(4),.subjectGrid > *:nth-child(4),.taskList > *:nth-child(4),.calendarGrid > *:nth-child(4){animation-delay:.105s}
-@keyframes orbit-item-in{
-  from{opacity:0;transform:translateY(5px)}
-  to{opacity:1;transform:none}
-}
-
-/* Inputs: one consistent focus treatment everywhere. */
-input,select,textarea{
-  transition:
-    border-color var(--orbit-motion) ease,
-    background-color var(--orbit-motion) ease,
-    box-shadow var(--orbit-motion) var(--orbit-ease),
-    transform var(--orbit-motion) var(--orbit-ease);
-}
-input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--line) 75%,white 25%);}
-input:focus,select:focus,textarea:focus{
-  transform:translateY(-1px);
-}
-
-/* Icon buttons: tiny directional motion + press feedback. */
-.iconbtn{
-  transition:
-    transform .18s var(--orbit-ease),
-    background-color .18s ease,
-    border-color .18s ease,
-    color .18s ease,
-    opacity .18s ease;
-}
-.iconbtn:hover{transform:translateY(-1px) scale(1.02);}
-.iconbtn:active{transform:scale(.94);}
-
-/* Segmented controls. */
-.seg button{
-  transition:background-color .18s var(--orbit-ease),color .18s ease,transform .18s var(--orbit-ease),box-shadow .18s ease;
-}
-.seg button:hover{transform:none;}
-.seg button:active{transform:scale(.97);}
-
-/* Dropdowns/search menus: same entrance and item response. */
-.dropdownMenu,.searchResults,.profileMenu{
-  transform-origin:top center;
-}
-.dropdownOption{
-  transition:background-color .16s ease,color .16s ease,transform .16s var(--orbit-ease);
-}
-.dropdownOption:hover{transform:translateX(2px);}
-
-/* Modals/popups: backdrop fades, surface rises slightly. */
-.overlay{
-  animation:orbit-overlay-in .22s ease-out both;
-}
-.modal{
-  animation:orbit-modal-in .30s var(--orbit-ease) both;
-}
-@keyframes orbit-modal-in{
-  from{opacity:0;transform:translateY(8px) scale(.985)}
-  to{opacity:1;transform:none}
-}
-.modalActions button:hover{transform:translateY(-1px);}
-.modalActions button:active{transform:scale(.975);}
-
-/* Calendar events: subtle lift only. */
-.calendarEvent{
-  transition:transform .18s var(--orbit-ease),background-color .18s ease,border-color .18s ease,box-shadow .18s ease;
-}
-.calendarEvent:hover{transform:translateY(-1px);}
-
-/* Focus timer controls: tactile but restrained. */
-.timerActions .big{
-  transition:transform .20s var(--orbit-ease),box-shadow .20s ease,background-color .20s ease,border-color .20s ease;
-}
-.timerActions .big:hover{transform:translateY(-2px);}
-.timerActions .big:active{transform:translateY(0) scale(.97);}
-
-/* Syllabus gets the same motion language as the rest of ORBIT. */
-.syllabusPanel .chapterAddRow .primary,
-.syllabusPanel .topicAddRow .secondary,
-.syllabusPanel .syllabusHeaderActions .secondary{
-  transition:
-    transform .20s var(--orbit-ease),
-    background-color .20s ease,
-    border-color .20s ease,
-    box-shadow .20s ease,
-    color .20s ease;
-}
-.syllabusPanel .chapterAddRow .primary:hover,
-.syllabusPanel .topicAddRow .secondary:hover,
-.syllabusPanel .syllabusHeaderActions .secondary:hover{
-  transform:translateY(-1px);
-}
-.syllabusPanel .chapterAddRow .primary:active,
-.syllabusPanel .topicAddRow .secondary:active,
-.syllabusPanel .syllabusHeaderActions .secondary:active{
-  transform:scale(.975);
-}
-.syllabusChapter{
-  transition:transform .24s var(--orbit-ease),border-color .24s ease,box-shadow .24s ease;
-}
-.syllabusChapter:hover{
-  transform:translateY(-1px);
-}
-.syllabusTopic{
-  transition:background-color .18s ease,border-color .18s ease,transform .18s var(--orbit-ease);
-}
-.syllabusTopic:hover{transform:translateX(2px);}
-.syllabusTopic .check{
-  transition:background-color .20s var(--orbit-ease),border-color .20s ease,transform .20s var(--orbit-ease),box-shadow .20s ease;
-}
-.syllabusTopic .check:active{transform:scale(.88);}
-.syllabusTopic .check.done{animation:orbit-check-pop .24s var(--orbit-ease) both;}
-@keyframes orbit-check-pop{
-  0%{transform:scale(.72)}
-  65%{transform:scale(1.08)}
-  100%{transform:scale(1)}
-}
-
-/* File/resource actions. */
-.pdfStorageHint,
-.resourceCard{
-  transition:opacity .20s ease,transform .20s var(--orbit-ease),border-color .20s ease,background-color .20s ease;
-}
-
-/* Search clear / small utility actions should never jump aggressively. */
-.searchClear:hover{transform:scale(1.04);}
-.searchClear:active{transform:scale(.92);}
-
-/* Keep motion comfortable on touch devices. */
-@media (hover:none){
-  button:not(:disabled):hover,
-  .subjectCard:hover,.addCard:hover,.task:hover,
-  .syllabusChapter:hover,.syllabusTopic:hover{transform:none;}
-  .nav::after{display:none;}
-}
-
-/* Accessibility: honor the OS reduced-motion preference completely. */
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{
-    animation-duration:.01ms!important;
-    animation-delay:0ms!important;
-    animation-iteration-count:1!important;
-    transition-duration:.01ms!important;
-    scroll-behavior:auto!important;
-  }
+.historyDateBar .historyNav{width:48px !important;min-width:48px !important;padding:0 !important;display:grid !important;place-items:center !important;}
+.historyDateBar .historyToday{width:88px !important;min-width:88px !important;padding:0 !important;display:flex !important;align-items:center !important;justify-content:center !important;}
+.historyDateBar .historyDatePicker .dateFieldButton{width:100% !important;display:flex !important;align-items:center !important;}
+@media(max-width:620px){
+  .historyDateBar .historyNav{width:44px !important;min-width:44px !important;}
+  .historyDateBar .historyToday{width:100% !important;min-width:0 !important;}
+  .historyDateBar .historyDatePicker .dateFieldButton{height:48px !important;min-height:48px !important;}
 }
