@@ -2709,3 +2709,26 @@ main>.page,
   .searchClear{transition:none}
 }
 
+
+/* Final search result alignment — match the search field exactly. */
+.search{position:relative;}
+.searchResults{
+  left:0!important;
+  right:auto!important;
+  width:100%!important;
+  max-width:none!important;
+  box-sizing:border-box!important;
+}
+.searchNoResults{
+  min-height:96px;
+  box-sizing:border-box;
+  padding:24px 18px!important;
+}
+@media(max-width:650px){
+  .searchResults{
+    left:0!important;
+    right:auto!important;
+    width:100%!important;
+    max-width:none!important;
+  }
+}
