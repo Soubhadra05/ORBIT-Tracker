@@ -2525,3 +2525,123 @@ main>.page,
 }
 
 /* ORBIT v21 — slower, smoother motion pass. Existing motion timings are intentionally eased up slightly for a calmer, more polished feel. */
+
+
+/* Restored ORBIT syllabus UI */
+/* ORBIT subject syllabus + resources */
+.syllabusPanel{width:100%;margin:0;padding:20px;min-height:300px;box-sizing:border-box;animation:orbit-fade-up .42s var(--ease) both}.syllabusPanel .panelHead{align-items:flex-start}.syllabusPanel .panelHead>div:first-child{min-width:0;flex:1}.syllabusHeaderActions{display:flex;align-items:flex-start;gap:8px}.syllabusSummary{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.syllabusSummary span{padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--muted);font-size:10px}.syllabusSummary b{color:var(--text);font-weight:650}.chapterAddRow,.topicAddRow{display:flex;gap:8px;align-items:center}.chapterAddRow{margin:14px 0 16px}.chapterAddRow input,.topicAddRow input{flex:1;min-width:0}.syllabusList{display:grid;gap:12px}.syllabusChapter{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:14px}.syllabusChapterHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.syllabusChapterTitle{min-width:0;flex:1}.chapterNumber{display:block;color:var(--muted);font-size:9px;letter-spacing:.08em;margin-bottom:4px}.syllabusChapter h3{font-size:15px;margin:0;line-height:1.35}.syllabusChapterActions{display:flex;gap:2px}.syllabusTopics{display:grid;gap:4px;margin:12px 0 10px}.syllabusTopic{display:flex;align-items:center;gap:8px;padding:8px 6px;border-radius:9px}.syllabusTopic:hover{background:rgba(255,255,255,.025)}.syllabusTopic .check{flex:none}.syllabusTopicTitle{flex:1;min-width:0;font-size:12px;color:var(--text);cursor:text}.syllabusTopicDone .syllabusTopicTitle{text-decoration:line-through;color:var(--muted)}.syllabusTopicEdit,.syllabusChapterEdit{flex:1;min-width:0;margin:0!important}.syllabusEmpty{padding:10px 6px;color:var(--muted);font-size:11px}.syllabusEmpty.large{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--line);border-radius:12px}.syllabusEmpty.large svg{color:var(--muted)}.pdfList{display:grid;gap:8px}.pdfCard{display:flex;align-items:center;gap:10px}.pdfInfo{min-width:0;flex:1}.pdfInfo b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pdfActions{display:flex;gap:2px}.pdfIntro{margin:5px 0 0!important;max-width:680px}.hiddenFileInput{display:none}.pdfStorageHint{margin-top:14px}.syllabusPanel .panelHead,.pdfPanel .panelHead{gap:14px}.syllabusPanel .panelHead>div:first-child,.pdfPanel .panelHead>div:first-child{min-width:0;flex:1}@media(max-width:650px){.syllabusPanel{padding:13px;min-height:300px}.syllabusHeaderActions{width:100%}.syllabusHeaderActions button{width:100%;justify-content:center}.chapterAddRow,.topicAddRow{align-items:stretch}.chapterAddRow{flex-direction:column}.topicAddRow{flex-direction:row}.topicAddRow button{white-space:nowrap}.syllabusPanel .panelHead,.pdfPanel .panelHead{align-items:stretch}.syllabusSummary{margin:10px 0}.syllabusChapter{padding:11px}}
+   ORBIT syllabus composer polish
+.syllabusPanel .chapterAddRow,
+.syllabusPanel .topicAddRow{display:flex;align-items:center;gap:10px}
+.syllabusPanel .chapterAddRow input,
+.syllabusPanel .topicAddRow input,
+.syllabusPanel .syllabusChapterEdit,
+.syllabusPanel .syllabusTopicEdit{
+.syllabusPanel .chapterAddRow input{height:48px;font-size:14px}
+.syllabusPanel .chapterAddRow input::placeholder,
+.syllabusPanel .topicAddRow input::placeholder,
+.syllabusPanel .syllabusChapterEdit::placeholder,
+.syllabusPanel .syllabusTopicEdit::placeholder{color:#666!important;opacity:1}
+.syllabusPanel .chapterAddRow input:hover,
+.syllabusPanel .topicAddRow input:hover,
+.syllabusPanel .syllabusChapterEdit:hover,
+.syllabusPanel .syllabusTopicEdit:hover{border-color:#3a3a3a!important;background:#0e0e0e!important}
+.syllabusPanel .chapterAddRow input:focus,
+.syllabusPanel .topicAddRow input:focus,
+.syllabusPanel .syllabusChapterEdit:focus,
+.syllabusPanel .syllabusTopicEdit:focus{
+.syllabusPanel .chapterAddRow .primary,
+.syllabusPanel .topicAddRow .secondary,
+.syllabusPanel .syllabusHeaderActions .secondary{
+.syllabusPanel .chapterAddRow .primary{height:48px;min-height:48px}
+.syllabusPanel .chapterAddRow .primary:not(:disabled):hover,
+.syllabusPanel .topicAddRow .secondary:not(:disabled):hover,
+.syllabusPanel .syllabusHeaderActions .secondary:not(:disabled):hover{transform:translateY(-1px)}
+.syllabusPanel .chapterAddRow .primary:active,
+.syllabusPanel .topicAddRow .secondary:active,
+.syllabusPanel .syllabusHeaderActions .secondary:active{transform:scale(.985)}
+.syllabusPanel .chapterAddRow button:disabled,
+.syllabusPanel .topicAddRow button:disabled{opacity:.42;cursor:not-allowed;transform:none}
+.syllabusChapter{overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.syllabusChapterHead{padding-bottom:2px}
+.syllabusChapterTitle h3{letter-spacing:-.01em}
+.syllabusChapterActions .iconbtn,
+.syllabusTopic .iconbtn{
+.syllabusChapter:hover .syllabusChapterActions .iconbtn,
+.syllabusTopic:hover .iconbtn,
+.syllabusChapterActions .iconbtn:focus-visible,
+.syllabusTopic .iconbtn:focus-visible{opacity:1}
+.syllabusChapterActions .iconbtn:hover,
+.syllabusTopic .iconbtn:hover{background:#171717;color:#fff;transform:translateY(-1px)}
+.syllabusTopic{min-height:42px;padding:5px 6px;border:1px solid transparent;transition:background .16s ease,border-color .16s ease}
+.syllabusTopic:hover{background:#111!important;border-color:#222}
+.syllabusTopic .check{width:22px;height:22px;border-radius:7px}
+.syllabusTopicTitle{font-size:12px;line-height:1.45}
+.syllabusTopicDone{opacity:.78}
+.syllabusTopicDone .check.done{box-shadow:0 0 0 3px rgba(52,211,153,.06)}
+.syllabusEmpty.large{background:rgba(255,255,255,.012)}
+:root[data-theme="light"] .syllabusPanel .chapterAddRow input,
+:root[data-theme="light"] .syllabusPanel .topicAddRow input,
+:root[data-theme="light"] .syllabusPanel .syllabusChapterEdit,
+:root[data-theme="light"] .syllabusPanel .syllabusTopicEdit{
+:root[data-theme="light"] .syllabusPanel .chapterAddRow input::placeholder,
+:root[data-theme="light"] .syllabusPanel .topicAddRow input::placeholder,
+:root[data-theme="light"] .syllabusPanel .syllabusChapterEdit::placeholder,
+:root[data-theme="light"] .syllabusPanel .syllabusTopicEdit::placeholder{color:#8a909d!important}
+:root[data-theme="light"] .syllabusPanel .chapterAddRow input:hover,
+:root[data-theme="light"] .syllabusPanel .topicAddRow input:hover,
+:root[data-theme="light"] .syllabusPanel .syllabusChapterEdit:hover,
+:root[data-theme="light"] .syllabusPanel .syllabusTopicEdit:hover{background:#fff!important;border-color:#c6cad4!important}
+:root[data-theme="light"] .syllabusPanel .chapterAddRow input:focus,
+:root[data-theme="light"] .syllabusPanel .topicAddRow input:focus,
+:root[data-theme="light"] .syllabusPanel .syllabusChapterEdit:focus,
+:root[data-theme="light"] .syllabusPanel .syllabusTopicEdit:focus{background:#fff!important;border-color:#9da3b0!important;box-shadow:0 0 0 3px rgba(124,77,255,.10)!important}
+:root[data-theme="light"] .syllabusTopic:hover{background:#f7f8fa!important;border-color:#e5e7eb}
+:root[data-theme="light"] .syllabusChapterActions .iconbtn:hover,
+:root[data-theme="light"] .syllabusTopic .iconbtn:hover{background:#f1f2f4;color:#17181b}
+  .syllabusPanel .chapterAddRow{flex-direction:column;align-items:stretch}
+  .syllabusPanel .chapterAddRow button{width:100%}
+  .syllabusPanel .topicAddRow{gap:7px}
+  .syllabusPanel .topicAddRow input{min-width:0}
+  .syllabusPanel .topicAddRow button{padding:0 12px}
+  .syllabusChapterActions .iconbtn,.syllabusTopic .iconbtn{opacity:1}
+.syllabusChapter,
+.syllabusTopic,
+/* Syllabus gets the same motion language as the rest of ORBIT. */
+.syllabusPanel .chapterAddRow .primary,
+.syllabusPanel .topicAddRow .secondary,
+.syllabusPanel .syllabusHeaderActions .secondary{
+.syllabusPanel .chapterAddRow .primary:hover,
+.syllabusPanel .topicAddRow .secondary:hover,
+.syllabusPanel .syllabusHeaderActions .secondary:hover{
+.syllabusPanel .chapterAddRow .primary:active,
+.syllabusPanel .topicAddRow .secondary:active,
+.syllabusPanel .syllabusHeaderActions .secondary:active{
+.syllabusChapter{
+.syllabusChapter:hover{
+.syllabusTopic{
+.syllabusTopic:hover{transform:translateX(2px);}
+.syllabusTopic .check{
+.syllabusTopic .check:active{transform:scale(.88);}
+.syllabusTopic .check.done{animation:orbit-check-pop .24s var(--orbit-ease) both;}
+  .syllabusChapter:hover,.syllabusTopic:hover{transform:none;}
+
+/* Interactive sidebar quote */
+.quoteCard{
+  width:100%;
+  display:block;
+  text-align:left;
+  font:inherit;
+  color:var(--text);
+  cursor:pointer;
+  transition:transform .34s cubic-bezier(.22,1,.36,1),border-color .34s ease,background-color .34s ease,box-shadow .34s ease;
+}
+.quoteCard:hover{transform:translateY(-2px);border-color:#8b5cf655;box-shadow:0 22px 52px var(--shadow)}
+.quoteCard:active{transform:translateY(0) scale(.985)}
+.quoteCard:focus-visible{outline:2px solid #8b5cf688;outline-offset:3px}
+.quoteCard p,.quoteCard small,.quoteCard .quoteMark,.quoteCard .onlineStatus{transition:opacity .2s ease,transform .2s ease}
+.quoteCardChanging p,.quoteCardChanging small{animation:quoteTextSwap .42s cubic-bezier(.22,1,.36,1)}
+.quoteCardChanging .quoteMark{animation:quoteMarkSwap .42s cubic-bezier(.22,1,.36,1)}
+@keyframes quoteTextSwap{0%{opacity:.2;transform:translateY(7px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes quoteMarkSwap{0%{opacity:.15;transform:translateY(5px) scale(.92)}100%{opacity:.9;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.quoteCard,.quoteCard p,.quoteCard small,.quoteCard .quoteMark,.quoteCard .onlineStatus{transition:none!important}.quoteCardChanging p,.quoteCardChanging small,.quoteCardChanging .quoteMark{animation:none!important}}
