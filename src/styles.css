@@ -469,7 +469,12 @@ body{transition:background .2s ease,color .2s ease}
 .dropdownOption.selected svg{color:#8b5cf6}
 @keyframes dropdownIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .priorityDropdown{width:128px}
-.taskStatusDropdown{width:126px;min-width:126px;flex:none}
+.taskStatusDropdown{width:126px;min-width:126px;flex:none;position:relative;z-index:40}
+.taskRow.detailed{position:relative;overflow:visible}
+.taskRow.detailed:has(.taskStatusDropdown.dropdownOpen){z-index:1000}
+.taskStatusDropdown .dropdownMenu{z-index:10000;width:170px;min-width:170px;right:0;top:calc(100% + 7px);padding:6px;border-radius:12px;pointer-events:auto}
+.taskStatusDropdown .dropdownOption{min-height:38px;padding:0 12px;border-radius:9px;cursor:pointer;pointer-events:auto}
+.taskStatusDropdown .dropdownOption span{pointer-events:none}
 .taskStatusDropdown .dropdownTrigger{min-height:36px;height:36px;padding:0 10px 0 12px;border-radius:10px;font-size:11px;font-weight:650;letter-spacing:-.01em;background:var(--panel2);box-shadow:none}
 .taskStatusDropdown .dropdownTrigger:hover,.taskStatusDropdown .dropdownTrigger.open{background:var(--panel2);border-color:#8b5cf688;box-shadow:0 0 0 3px #8b5cf614}
 .taskStatusDropdown .dropdownMenu{min-width:150px;right:0}

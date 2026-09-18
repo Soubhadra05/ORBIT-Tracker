@@ -385,9 +385,12 @@ function App(){
         }
       }catch(e){if(e.status===401)alert('Task status updated, but Google Calendar access has expired. Sign out and sign in with Google again to reconnect Calendar.');else console.warn('Google Calendar sync failed:',e)}
     }
-    setTasks(x=>x.map(a=>a.id===t.id?synced:a)); return;
+    setTasks(x=>x.map(a=>a.id===t.id?synced:a));
+    setFilter(status);
+    return;
   }
   setTasks(x=>x.map(a=>a.id===t.id?{...a,status,completed_at}:a));
+  setFilter(status);
  }
  async function updateTask(t,changes){
   const next={...t,...changes,due_date:('due_date' in changes?(changes.due_date||null):t.due_date),start_date:('start_date' in changes?(changes.start_date||null):t.start_date||t.due_date),end_date:('end_date' in changes?(changes.end_date||null):t.end_date||t.due_date),subject_id:('subject_id' in changes?(changes.subject_id||null):t.subject_id),start_time:('start_time' in changes?(changes.start_time||null):t.start_time),end_time:('end_time' in changes?(changes.end_time||null):t.end_time)};
