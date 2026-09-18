@@ -469,12 +469,7 @@ body{transition:background .2s ease,color .2s ease}
 .dropdownOption.selected svg{color:#8b5cf6}
 @keyframes dropdownIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .priorityDropdown{width:128px}
-.taskStatusDropdown{width:126px;min-width:126px;flex:none;position:relative;z-index:40}
-.taskRow.detailed{position:relative;overflow:visible}
-.taskRow.detailed:has(.taskStatusDropdown.dropdownOpen){z-index:1000}
-.taskStatusDropdown .dropdownMenu{z-index:10000;width:170px;min-width:170px;right:0;top:calc(100% + 7px);padding:6px;border-radius:12px;pointer-events:auto}
-.taskStatusDropdown .dropdownOption{min-height:38px;padding:0 12px;border-radius:9px;cursor:pointer;pointer-events:auto}
-.taskStatusDropdown .dropdownOption span{pointer-events:none}
+.taskStatusDropdown{width:126px;min-width:126px;flex:none}
 .taskStatusDropdown .dropdownTrigger{min-height:36px;height:36px;padding:0 10px 0 12px;border-radius:10px;font-size:11px;font-weight:650;letter-spacing:-.01em;background:var(--panel2);box-shadow:none}
 .taskStatusDropdown .dropdownTrigger:hover,.taskStatusDropdown .dropdownTrigger.open{background:var(--panel2);border-color:#8b5cf688;box-shadow:0 0 0 3px #8b5cf614}
 .taskStatusDropdown .dropdownMenu{min-width:150px;right:0}
@@ -2817,4 +2812,42 @@ main>.page,
  .syllabusPanel .topicAddRow .secondary{min-width:0!important;padding:0 12px!important}
  .syllabusChapter{padding:14px!important}
  .syllabusChapterActions .iconbtn,.syllabusTopic .iconbtn{opacity:1!important}
+}
+
+/* Focus action alignment — consistent premium controls */
+.timerActions{align-items:stretch;gap:14px;width:100%;}
+.timerActions .primary.big,
+.timerActions .secondary{
+  height:104px;
+  min-height:104px;
+  border-radius:18px!important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:0 28px;
+  font-size:22px;
+  font-weight:650;
+  line-height:1;
+  white-space:nowrap;
+}
+.timerActions .primary.big{min-width:304px;}
+.timerActions .secondary{min-width:192px;}
+.timerActions .primary.big svg,
+.timerActions .secondary svg{width:28px;height:28px;flex:none;}
+.timerActions .secondary{background:#0a0a0a!important;color:#ededed!important;border:1px solid #303030!important;box-shadow:none!important;}
+.timerActions .secondary:hover{background:#141414!important;border-color:#444!important;transform:translateY(-2px);}
+.timerActions .primary.big:hover{transform:translateY(-2px);}
+.timerActions .primary.big:active,
+.timerActions .secondary:active{transform:translateY(0) scale(.99)!important;}
+@media(max-width:650px){
+  .timerActions{width:100%;gap:10px;}
+  .timerActions .primary.big,
+  .timerActions .secondary{height:72px;min-height:72px;font-size:16px;padding:0 16px;border-radius:14px!important;}
+  .timerActions .primary.big{min-width:0;flex:1;}
+  .timerActions .secondary{min-width:0;flex:0 0 40%;}
+  .timerActions .primary.big svg,.timerActions .secondary svg{width:22px;height:22px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .timerActions .primary.big:hover,.timerActions .secondary:hover{transform:none;}
 }
