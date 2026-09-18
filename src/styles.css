@@ -2851,3 +2851,28 @@ main>.page,
 @media(prefers-reduced-motion:reduce){
   .timerActions .primary.big:hover,.timerActions .secondary:hover{transform:none;}
 }
+
+/* Task status dropdown — keep the menu above task content and fully clickable. */
+.taskRow:has(.taskStatusDropdown.dropdownOpen){position:relative;z-index:50}
+.taskStatusDropdown{position:relative;z-index:60}
+.taskStatusDropdown.dropdownOpen{z-index:100}
+.taskStatusDropdown .dropdownMenu{
+  z-index:1000!important;
+  pointer-events:auto!important;
+  width:100%!important;
+  min-width:126px!important;
+  right:0!important;
+  left:auto!important;
+}
+.taskStatusDropdown .dropdownOption{
+  position:relative;
+  z-index:1001;
+  cursor:pointer;
+  pointer-events:auto!important;
+  user-select:none;
+}
+.taskStatusDropdown .dropdownOption:hover{transform:none}
+.taskStatusDropdown .dropdownOption:active{transform:scale(.99)}
+@media(max-width:700px){
+  .taskStatusDropdown .dropdownMenu{min-width:118px!important}
+}
