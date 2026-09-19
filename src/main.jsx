@@ -145,6 +145,72 @@ function likelyClassText(text){
  if(/^(recess|r\s*e\s*c\s*e\s*s\s*s)$/i.test(s.replace(/\s+/g,'')))return false;
  return /(?:\b[A-Z]{2,6}[- ]?[A-Z]{0,4}\s*[- ]?\d{3}[A-Z]?\b|\b(?:BSC|MC-CS|HSMC|ESC|PROJ)\s+\d{3}\b|\b(?:Mathematics|Physics|Chemistry|English|Project|Computer)\b)/i.test(s) || s.length>=10;
 }
+function parseScheduleDateText(value){
+ const s=cleanOcrCellText(value).replace(/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)day,?\s*/i,'');
+ const m=s.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(20\d{2})\b/i);
+ if(!m)return null;
+ const months={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+ const month=months[m[1].toLowerCase()],day=Number(m[2]),year=Number(m[3]);
+ if(!month||day<1||day>31)return null;
+ const d=new Date(year,month-1,day); if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return null;
+ return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+function parseCourseScheduleLine(line){
+ const s=cleanOcrCellText(line); if(!s)return null;
+ const dateRe=/\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?\s*,?\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+20\d{2}\b/ig;
+ const dates=[...s.matchAll(dateRe)];
+ if(dates.length<2)return null;
+ const firstDate=dates[0][0],secondDate=dates[1][0];
+ const start_date=parseScheduleDateText(firstDate),end_date=parseScheduleDateText(secondDate);
+ const before=s.slice(0,dates[0].index).replace(/[|•]+/g,' ').trim();
+ const after=s.slice((dates[1].index||0)+secondDate.length);
+ const range=parseTimeRange(after);
+ if(!start_date||!end_date||!range||!before||/^(notify|recorded|n)$/i.test(before))return null;
+ return {title:before.replace(/\s+/g,' ').trim(),start_date,end_date,start_time:range.start_time,end_time:range.end_time,room:'',source:'course-range',slots:[1,2,3,4,5].map(weekday=>({weekday,start_time:range.start_time,end_time:range.end_time}))};
+}
+function parseTsvWords(tsv){
+ const lines=String(tsv||'').split(/\r?\n/); if(lines.length<2)return [];
+ return lines.slice(1).map(line=>{
+  const c=line.split('\t'); if(c.length<12)return null;
+  const [level,,block,par,lineNum,wordNum,left,top,width,height,conf,...rest]=c; const text=rest.join('\t').trim();
+  return {level:Number(level),block:Number(block),par:Number(par),lineNum:Number(lineNum),wordNum:Number(wordNum),left:Number(left),top:Number(top),width:Number(width),height:Number(height),conf:Number(conf),text};
+ }).filter(w=>w&&w.level===5&&w.text&&Number.isFinite(w.left)&&Number.isFinite(w.top)&&Number(w.conf)>=20);
+}
+function parseCourseScheduleFromText(text){
+ const rows=[]; for(const line of String(text||'').split(/\r?\n/).map(cleanOcrCellText).filter(Boolean)){const row=parseCourseScheduleLine(line);if(row)rows.push(row)}
+ return rows;
+}
+async function parseCourseScheduleFromWords(words,canvas,ocrCanvas){
+ const ws=(words||[]).map(w=>({text:cleanOcrCellText(w.text||''),left:Number(w.bbox?.x0??w.left??0),top:Number(w.bbox?.y0??w.top??0),right:Number(w.bbox?.x1??((w.left||0)+(w.width||0))),bottom:Number(w.bbox?.y1??((w.top||0)+(w.height||0))),conf:Number(w.confidence??w.conf??0)})).filter(w=>w.text&&w.conf>=20);
+ const findHeader=(rx)=>ws.filter(w=>rx.test(w.text)).sort((a,b)=>a.top-b.top)[0];
+ const subjectH=findHeader(/^SUBJECT$/i),startH=findHeader(/^START$/i),endH=findHeader(/^END$/i),timeH=findHeader(/^TIME$/i);
+ if(!subjectH||!startH||!endH||!timeH)return [];
+ const headerY=Math.max(subjectH.bottom,startH.bottom,endH.bottom,timeH.bottom);
+ const centers={subject:(subjectH.left+subjectH.right)/2,start:(startH.left+startH.right)/2,end:(endH.left+endH.right)/2,time:(timeH.left+timeH.right)/2};
+ const rows=[];
+ const candidates=ws.filter(w=>w.top>headerY+10);
+ candidates.sort((a,b)=>a.top-b.top);
+ const groups=[]; const tolerance=13;
+ for(const w of candidates){const cy=(w.top+w.bottom)/2;let g=groups.find(x=>Math.abs(x.cy-cy)<=tolerance);if(!g){g={cy,words:[]};groups.push(g)}g.words.push(w)}
+ groups.sort((a,b)=>a.cy-b.cy);
+ for(const g of groups){
+  if(g.cy<300 && canvas.height>900){} // harmless guard for cropped viewers
+  const sorted=g.words.sort((a,b)=>a.left-b.left);
+  const subject=sorted.filter(w=>w.left < (centers.subject+centers.start)/2).map(w=>w.text).join(' ').trim();
+  const startText=sorted.filter(w=>w.left >= (centers.subject+centers.start)/2 && w.left < (centers.start+centers.end)/2).map(w=>w.text).join(' ').trim();
+  const endText=sorted.filter(w=>w.left >= (centers.start+centers.end)/2 && w.left < (centers.end+centers.time)/2).map(w=>w.text).join(' ').trim();
+  let timeText=sorted.filter(w=>w.left >= (centers.end+centers.time)/2).map(w=>w.text).join(' ').trim();
+  const start_date=parseScheduleDateText(startText),end_date=parseScheduleDateText(endText);
+  if(!start_date||!end_date||!subject||/^(notify|recorded|n)$/i.test(subject))continue;
+  let range=parseTimeRange(timeText);
+  if(!range&&ocrCanvas){
+   const x0=Math.max(0,Math.round(centers.time-canvas.width*.12)), x1=Math.min(canvas.width,canvas.width-8);
+   try{const r=await ocrCanvas(x0,Math.max(0,Math.round(g.cy-22)),x1,Math.min(canvas.height,Math.round(g.cy+22)));range=parseTimeRange(r.text)}catch(e){}
+  }
+  rows.push({title:subject.replace(/\s+/g,' ').trim(),start_date,end_date,start_time:range?.start_time||null,end_time:range?.end_time||null,room:'',source:'course-range',rowCenter:g.cy});
+ }
+ return rows;
+}
 function parseTimetableOcr(text){
  const rows=[]; const lines=String(text||'').split(/\r?\n/).map(x=>cleanOcrCellText(x)).filter(Boolean);
  const dayRe=/\b(Sun(?:day)?|Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?)\b/i;
@@ -164,6 +230,25 @@ async function recognizeTimetableImage(file,T){
  const worker=await T.createWorker('eng');
  const ocrCanvas=async(x0,y0,x1,y1)=>{const w=Math.max(1,Math.round(x1-x0)),h=Math.max(1,Math.round(y1-y0));const c=document.createElement('canvas');c.width=Math.round(w*1.6);c.height=Math.round(h*1.6);const cc=c.getContext('2d',{willReadFrequently:true});cc.fillStyle='#fff';cc.fillRect(0,0,c.width,c.height);cc.drawImage(canvas,x0,y0,w,h,0,0,c.width,c.height);const r=await worker.recognize(c);return {text:cleanOcrCellText(r?.data?.text||''),confidence:Number(r?.data?.confidence||0)}};
  try{
+  // First detect the date-range course schedule layout (Subject / Start Date / End Date / Time).
+  // This is the layout used by the supplied GATE schedule image and is fundamentally different from a weekly grid.
+  const fullResult=await worker.recognize(canvas, {}, {tsv:true});
+  const fullText=cleanOcrCellText(fullResult?.data?.text||'');
+  let courseRows=parseCourseScheduleFromText(fullResult?.data?.text||'');
+  if(courseRows.length>=2){
+   // Recover time ranges that OCR can miss when the time column is circled/marked up.
+   const wordRows=await parseCourseScheduleFromWords(parseTsvWords(fullResult?.data?.tsv||''),canvas,ocrCanvas);
+   const merged=new Map();
+   for(const r of [...courseRows,...wordRows]){
+    const key=`${r.title}|${r.start_date}|${r.end_date}`;
+    const prev=merged.get(key);
+    if(!prev || (!prev.start_time&&r.start_time))merged.set(key,r);
+   }
+   courseRows=[...merged.values()];
+   // A date-range schedule does not explicitly state weekdays; default to Mon–Fri, which the user can edit in review.
+   courseRows=courseRows.filter(r=>r.start_time&&r.end_time).map(r=>({...r,slots:[1,2,3,4,5].map(weekday=>({weekday,start_time:r.start_time,end_time:r.end_time}))}));
+   if(courseRows.length>=2){worker.terminate();return {text:fullResult?.data?.text||'',rows:courseRows,mode:'course-range'};}
+  }
   // Header time labels. The two-page college routine layout uses a narrow recess column between 1:50 and 2:20.
   const headerBand=allY.filter(y=>y>canvas.height*.02&&y<canvas.height*.20); const hTop=headerBand[0]||Math.round(canvas.height*.14),hBottom=headerBand[1]||Math.round(canvas.height*.20);
   const headerWords=(await ocrCanvas(0,hTop+2,canvas.width,hBottom-2)).text.split(' ');
@@ -385,12 +470,9 @@ function App(){
         }
       }catch(e){if(e.status===401)alert('Task status updated, but Google Calendar access has expired. Sign out and sign in with Google again to reconnect Calendar.');else console.warn('Google Calendar sync failed:',e)}
     }
-    setTasks(x=>x.map(a=>a.id===t.id?synced:a));
-    setFilter(status);
-    return;
+    setTasks(x=>x.map(a=>a.id===t.id?synced:a)); return;
   }
   setTasks(x=>x.map(a=>a.id===t.id?{...a,status,completed_at}:a));
-  setFilter(status);
  }
  async function updateTask(t,changes){
   const next={...t,...changes,due_date:('due_date' in changes?(changes.due_date||null):t.due_date),start_date:('start_date' in changes?(changes.start_date||null):t.start_date||t.due_date),end_date:('end_date' in changes?(changes.end_date||null):t.end_date||t.due_date),subject_id:('subject_id' in changes?(changes.subject_id||null):t.subject_id),start_time:('start_time' in changes?(changes.start_time||null):t.start_time),end_time:('end_time' in changes?(changes.end_time||null):t.end_time)};
@@ -926,12 +1008,19 @@ function TimetableImportModal({onClose,onImport}){
  const processFile=async file=>{if(!file)return;setBusy(true);setMessage('');try{
    const lower=file.name.toLowerCase(); let parsed=[];
    if(lower.endsWith('.csv')||file.type==='text/csv'){
-    const text=await file.text(); parsed=parseTimetableCsv(text).map(x=>({...x,start_date:startDate,end_date:endDate}));setOcrText(text);setMessage(parsed.length?`Detected ${parsed.length} schedule row${parsed.length===1?'':'s'}. Review before importing.`:'No rows matched. Check the CSV format.');
+    const text=await file.text(); parsed=parseTimetableCsv(text).map(x=>({...x,start_date:x.start_date||startDate,end_date:x.end_date||endDate}));setOcrText(text);setMessage(parsed.length?`Detected ${parsed.length} schedule row${parsed.length===1?'':'s'}. Review before importing.`:'No rows matched. Check the CSV format.');
    }else{
     const T=await loadTesseract();let text='';
     if(lower.endsWith('.pdf')||file.type==='application/pdf'){const result=await ocrPdfFile(file,T);text=result.text;parsed=result.rows;setMessage(parsed.length?`Detected ${parsed.length} possible class${parsed.length===1?'':'es'} from the PDF. Review and remove anything that does not belong to you.`:'No classes were confidently detected from the PDF. Try a clearer file or add classes manually.')} 
     else{const result=await recognizeTimetableImage(file,T);text=result.text;parsed=result.rows;setMessage(parsed.length?`Detected ${parsed.length} possible class${parsed.length===1?'':'es'}. Review and remove anything that does not belong to you.`:'No classes were confidently detected. Try a clearer scan or add classes manually.')}
-    parsed=parsed.map(x=>({...x,start_date:startDate,end_date:endDate}));setOcrText(text);
+    parsed=parsed.map(x=>({...x,start_date:x.start_date||startDate,end_date:x.end_date||endDate}));
+    if(parsed.some(x=>x.source==='course-range')){
+      const starts=parsed.map(x=>x.start_date).filter(Boolean).sort(),ends=parsed.map(x=>x.end_date).filter(Boolean).sort();
+      if(starts.length)setStartDate(starts[0]);
+      if(ends.length)setEndDate(ends[ends.length-1]);
+      setMessage(`Detected a date-range course schedule with ${parsed.length} classes. ORBIT set Mon–Fri by default; review the days before importing.`);
+    }
+    setOcrText(text);
    }
    setEntries(groupTimetableEntries(parsed));
   }catch(err){setMessage(err?.message||'Could not read that timetable file.')}finally{setBusy(false)}};
@@ -959,6 +1048,7 @@ function TimetableImportModal({onClose,onImport}){
   </div>
   <div className="termGrid"><label>Overall schedule starts<input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}/></label><label>Overall schedule ends<input type="date" value={endDate} min={startDate} onChange={e=>setEndDate(e.target.value)}/></label></div>
   {message&&<div className="importMessage">{message}</div>}
+  {entries.some(e=>e.source==='course-range')&&<div className="courseRangeHint"><CalendarClock size={15}/><span><b>Date-range schedule detected.</b> The image gives start/end dates and a time, not explicit weekdays, so each class is set to Monday–Friday by default. You can remove or change days below before importing.</span></div>}
   <div className="importHeader"><div><span className="eyebrow">SCHEDULE ENTRIES</span><b>{entries.length} class{entries.length===1?'':'es'}</b></div><button type="button" className="secondary addClassBtn" onClick={addRow}><Plus size={14}/> Add class</button></div>
   {entries.length?<div className="importRows">{entries.map((e,i)=><div className="importCard" key={i}>
     <div className="importCardTop"><div className="importCardTitle"><span className="classIndex">{String(i+1).padStart(2,'0')}</span><div><input className="classTitleInput" value={e.title||''} onChange={x=>update(i,'title',x.target.value)} placeholder="Class / subject"/><input className="classRoomInput" value={e.room||''} onChange={x=>update(i,'room',x.target.value)} placeholder="Room (optional)"/></div></div><button type="button" className="iconbtn dangerIcon" onClick={()=>removeRow(i)} title="Remove class"><Trash2 size={15}/></button></div>

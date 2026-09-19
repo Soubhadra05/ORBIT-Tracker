@@ -2852,27 +2852,4 @@ main>.page,
   .timerActions .primary.big:hover,.timerActions .secondary:hover{transform:none;}
 }
 
-/* Task status dropdown — keep the menu above task content and fully clickable. */
-.taskRow:has(.taskStatusDropdown.dropdownOpen){position:relative;z-index:50}
-.taskStatusDropdown{position:relative;z-index:60}
-.taskStatusDropdown.dropdownOpen{z-index:100}
-.taskStatusDropdown .dropdownMenu{
-  z-index:1000!important;
-  pointer-events:auto!important;
-  width:100%!important;
-  min-width:126px!important;
-  right:0!important;
-  left:auto!important;
-}
-.taskStatusDropdown .dropdownOption{
-  position:relative;
-  z-index:1001;
-  cursor:pointer;
-  pointer-events:auto!important;
-  user-select:none;
-}
-.taskStatusDropdown .dropdownOption:hover{transform:none}
-.taskStatusDropdown .dropdownOption:active{transform:scale(.99)}
-@media(max-width:700px){
-  .taskStatusDropdown .dropdownMenu{min-width:118px!important}
-}
+.courseRangeHint{display:flex;align-items:flex-start;gap:10px;margin:12px 0 14px;padding:12px 14px;border:1px solid rgba(139,92,246,.24);border-radius:12px;background:rgba(139,92,246,.06);color:var(--muted);font-size:12px;line-height:1.5}.courseRangeHint svg{flex:none;color:#a78bfa;margin-top:2px}.courseRangeHint b{color:var(--text)}
