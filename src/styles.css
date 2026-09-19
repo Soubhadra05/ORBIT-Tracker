@@ -2814,38 +2814,46 @@ main>.page,
  .syllabusChapterActions .iconbtn,.syllabusTopic .iconbtn{opacity:1!important}
 }
 
-/* Focus action alignment — compact controls */
-.timerActions{align-items:center;justify-content:center;gap:12px;width:auto;}
+/* Focus action alignment — compact, centered controls */
+.timerActions{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+}
 .timerActions .primary.big,
 .timerActions .secondary{
-  height:78px;
-  min-height:78px;
-  border-radius:16px!important;
+  height:66px;
+  min-height:66px;
+  border-radius:14px!important;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:10px;
-  padding:0 22px;
-  font-size:18px;
+  padding:0 20px;
+  font-size:16px;
   font-weight:650;
   line-height:1;
   white-space:nowrap;
+  box-sizing:border-box;
+  flex:none;
 }
-.timerActions .primary.big{min-width:250px;}
-.timerActions .secondary{min-width:158px;}
+.timerActions .primary.big{width:234px;min-width:234px;}
+.timerActions .secondary{width:174px;min-width:174px;}
 .timerActions .primary.big svg,
-.timerActions .secondary svg{width:23px;height:23px;flex:none;}
+.timerActions .secondary svg{width:22px;height:22px;flex:none;}
 .timerActions .secondary{background:#0a0a0a!important;color:#ededed!important;border:1px solid #303030!important;box-shadow:none!important;}
 .timerActions .secondary:hover{background:#141414!important;border-color:#444!important;transform:translateY(-2px);}
 .timerActions .primary.big:hover{transform:translateY(-2px);}
 .timerActions .primary.big:active,
 .timerActions .secondary:active{transform:translateY(0) scale(.99)!important;}
 @media(max-width:650px){
-  .timerActions{width:100%;gap:9px;}
+  .timerActions{width:100%;gap:8px;}
   .timerActions .primary.big,
-  .timerActions .secondary{height:62px;min-height:62px;font-size:15px;padding:0 13px;border-radius:13px!important;}
-  .timerActions .primary.big{min-width:0;flex:1;}
-  .timerActions .secondary{min-width:0;flex:0 0 36%;}
+  .timerActions .secondary{height:58px;min-height:58px;font-size:14px;padding:0 14px;border-radius:12px!important;}
+  .timerActions .primary.big{width:auto;min-width:0;flex:1;}
+  .timerActions .secondary{width:auto;min-width:0;flex:0 0 36%;}
   .timerActions .primary.big svg,.timerActions .secondary svg{width:19px;height:19px;}
 }
 @media(prefers-reduced-motion:reduce){
