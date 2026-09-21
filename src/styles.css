@@ -40,11 +40,11 @@ body{transition:background .2s ease,color .2s ease}
 @media(max-width:700px){.focusOptions{grid-template-columns:1fr 1fr}.customFocus{grid-column:1 / -1;align-items:flex-start;flex-direction:column}.customControl{width:100%}.customControl input{flex:1}.timerMeta{margin-top:-8px}}
 
 /* Sidebar quote + online status */
-.quoteCard{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:16px 17px;box-shadow:0 18px 45px var(--shadow);position:relative;overflow:hidden}
+.quoteCard{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:18px 17px;box-shadow:0 18px 45px var(--shadow);position:relative;overflow:hidden;width:100%;height:220px;min-height:220px;display:flex;flex-direction:column;justify-content:flex-start}
 .quoteMark{font:700 34px/1 Georgia,serif;color:#a78bfa;height:22px;opacity:.9}
-.quoteCard p{margin:5px 0 4px;font:600 13px "Geist Sans";color:var(--text)}
+.quoteCard p{margin:12px 0 5px;font:600 13px "Geist Sans";color:var(--text);line-height:1.35}
 .quoteCard small{display:block;color:var(--muted);font-size:9px;line-height:1.45}
-.onlineStatus{display:flex;align-items:center;gap:7px;margin-top:14px;color:var(--text);font-size:10px;font-weight:600}
+.onlineStatus{display:flex;align-items:center;gap:7px;margin-top:auto;padding-top:14px;color:var(--text);font-size:10px;font-weight:600;min-height:24px}
 .onlineDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px #34d39918,0 0 14px #34d39966;flex:none}
 
 /* Calendar view modes */
