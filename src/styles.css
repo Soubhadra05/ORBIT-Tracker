@@ -2925,3 +2925,25 @@ main>.page,
   .sideBottom{padding-top:12px}
   .quoteCard{height:150px!important;min-height:150px!important;max-height:150px!important}
 }
+
+
+/* Final quote-card typography consistency */
+.quoteCard,
+.quoteCard p,
+.quoteCard small,
+.quoteCard .quoteMark,
+.quoteCard .onlineStatus {
+  font-family: "Geist Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+.quoteCard p {
+  font-weight: 600 !important;
+}
+.quoteCard small {
+  font-weight: 400 !important;
+}
+.quoteCard .onlineStatus {
+  font-weight: 600 !important;
+}
+.quoteCard .quoteMark {
+  font-weight: 700 !important;
+}
