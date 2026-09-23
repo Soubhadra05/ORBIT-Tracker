@@ -3446,3 +3446,174 @@ main>.page,
   .habitDayRow{animation:none!important;transition:none!important}
   .habitQuickAction,.habitResetBtn{transition:none!important}
 }
+
+/* =========================================================
+   Habit Tracker v4 — compact habit switcher + paged timeline
+   Keeps all habits reachable without a long multi-card scroll.
+   ========================================================= */
+.habitSwitcher{
+  width:min(1100px,100%);
+  margin:0 auto 16px;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:rgba(255,255,255,.012);
+  position:sticky;
+  top:12px;
+  z-index:8;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  box-shadow:0 14px 35px rgba(0,0,0,.16);
+  animation:orbit-fade-up .4s var(--ease) both;
+}
+.habitSwitcherHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:10px;
+}
+.habitSwitcherHead>div{min-width:0}
+.habitSwitcherHead span{
+  display:block;
+  font-size:9px;
+  letter-spacing:1.5px;
+  font-weight:700;
+  color:var(--muted);
+}
+.habitSwitcherHead small{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:9px;
+}
+.habitSwitcherHead>b{
+  flex:0 0 auto;
+  font-size:10px;
+  color:#c4b5fd;
+  font-weight:600;
+}
+.habitSwitcherGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.habitMini{
+  min-width:0;
+  min-height:72px;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--panel2);
+  color:var(--muted);
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) 18px;
+  align-items:center;
+  gap:9px;
+  text-align:left;
+  transition:transform .22s var(--ease),border-color .22s ease,background .22s ease,box-shadow .22s ease,color .22s ease;
+}
+.habitMini:hover{
+  transform:translateY(-2px);
+  border-color:#8b5cf655;
+  background:linear-gradient(120deg,rgba(139,92,246,.07),rgba(255,255,255,.02));
+  color:var(--text);
+  box-shadow:0 12px 26px rgba(0,0,0,.14);
+}
+.habitMini:active{transform:translateY(0) scale(.99)}
+.habitMini.active{
+  border-color:#8b5cf688;
+  background:linear-gradient(120deg,rgba(139,92,246,.12),rgba(255,255,255,.025));
+  color:var(--text);
+  box-shadow:inset 2px 0 #8b5cf6,0 12px 30px rgba(0,0,0,.14);
+}
+.habitMiniIndex{
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  display:grid;
+  place-items:center;
+  color:#c4b5fd;
+  background:rgba(139,92,246,.1);
+  border:1px solid rgba(139,92,246,.2);
+  font:600 10px/1 "Geist Sans";
+}
+.habitMiniBody{min-width:0;display:flex;flex-direction:column;gap:4px}
+.habitMiniBody strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font:600 11px/1.2 "Geist Sans";
+  color:inherit;
+}
+.habitMiniBody small{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--muted);
+  font-size:8px;
+}
+.habitMiniBar{
+  height:3px;
+  width:100%;
+  border-radius:999px;
+  overflow:hidden;
+  background:#171b25;
+}
+.habitMiniBar i{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#7c5bf0,#a78bfa);
+  box-shadow:0 0 12px rgba(139,92,246,.24);
+  transition:width .3s var(--ease);
+}
+.habitMini>svg{color:#4d566a;transition:transform .18s ease,color .18s ease}
+.habitMini:hover>svg,.habitMini.active>svg{transform:translate(2px,-2px);color:#c4b5fd}
+.habitCardFocused{
+  width:min(1100px,100%);
+  margin:0 auto;
+}
+.habitRangeBar{
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr) 38px;
+  align-items:center;
+  gap:9px;
+  margin:0 6px 10px;
+}
+.habitRangeBar>div{text-align:center;display:flex;flex-direction:column;gap:3px}
+.habitRangeBar b{font:600 10px/1.2 "Geist Sans";color:var(--text)}
+.habitRangeBar span{font-size:8px;color:var(--muted)}
+.habitRangeBtn{
+  width:38px;
+  height:32px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--panel2);
+  color:var(--muted);
+  display:grid;
+  place-items:center;
+  transition:transform .18s ease,border-color .18s ease,color .18s ease,background .18s ease;
+}
+.habitRangeBtn:hover:not(:disabled){transform:translateY(-1px);border-color:#8b5cf655;color:var(--text);background:rgba(139,92,246,.06)}
+.habitRangeBtn:active:not(:disabled){transform:scale(.97)}
+.habitRangeBtn:disabled{opacity:.35;cursor:not-allowed}
+
+@media(max-width:900px){
+  .habitSwitcher{position:relative;top:auto}
+  .habitSwitcherGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .habitCardFocused{width:100%}
+}
+@media(max-width:600px){
+  .habitSwitcher{padding:10px;margin-bottom:12px}
+  .habitSwitcherGrid{grid-template-columns:1fr}
+  .habitSwitcherHead{align-items:flex-start}
+  .habitSwitcherHead small{max-width:260px}
+  .habitMini{min-height:66px}
+}
+
+:root[data-theme="light"] .habitSwitcher{background:rgba(255,255,255,.7);box-shadow:0 14px 35px rgba(17,24,39,.08)}
+:root[data-theme="light"] .habitMini{background:rgba(255,255,255,.75)}
+:root[data-theme="light"] .habitMini.active{background:rgba(124,77,255,.06)}
+:root[data-theme="light"] .habitMiniBar{background:#eceef4}
+:root[data-theme="light"] .habitRangeBtn{background:rgba(255,255,255,.75)}

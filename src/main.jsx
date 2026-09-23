@@ -749,8 +749,24 @@ function Habits({habits,onAdd,onUpdate,onDelete,onToggleDay,onChangeDays,onReset
  const [editingId,setEditingId]=useState(null);
  const [draft,setDraft]=useState('');
  const [daysDrafts,setDaysDrafts]=useState({});
+ const [selectedHabitId,setSelectedHabitId]=useState(()=>habits[0]?.id||null);
+ const [dayStart,setDayStart]=useState(0);
  const skipEditBlur=useRef(false);
  const skipDaysBlur=useRef(new Set());
+ const PAGE_SIZE=10;
+ 
+ useEffect(()=>{
+  if(!habits.length){setSelectedHabitId(null);setDayStart(0);return}
+  setSelectedHabitId(prev=>habits.some(h=>h.id===prev)?prev:habits[0].id);
+ },[habits]);
+ 
+ const selectedHabit=habits.find(h=>h.id===selectedHabitId)||habits[0];
+ useEffect(()=>{
+  if(!selectedHabit){setDayStart(0);return}
+  const maxStart=Math.max(0,Math.floor((selectedHabit.days-1)/PAGE_SIZE)*PAGE_SIZE);
+  setDayStart(prev=>Math.min(prev,maxStart));
+ },[selectedHabit?.id,selectedHabit?.days]);
+ 
  const beginEdit=h=>{setEditingId(h.id);setDraft(h.name)};
  const cancelEdit=()=>{setEditingId(null);setDraft('')};
  const commitEdit=id=>{const name=draft.trim();if(name)onUpdate(id,{name});cancelEdit()};
@@ -763,56 +779,96 @@ function Habits({habits,onAdd,onUpdate,onDelete,onToggleDay,onChangeDays,onReset
   onChangeDays(h.id,Number.isFinite(numeric)?numeric:h.days);
   setDaysDrafts(prev=>{const next={...prev};delete next[h.id];return next});
  };
+ 
+ const openHabit=id=>{setSelectedHabitId(id);setDayStart(0)};
+ const jumpToDay=day=>setDayStart(Math.max(0,Math.floor((day-1)/PAGE_SIZE)*PAGE_SIZE));
+ const completeNext=()=>{
+  if(!selectedHabit)return;
+  const completed=new Set(selectedHabit.completed||[]);
+  const nextDay=Array.from({length:selectedHabit.days},(_,i)=>i+1).find(day=>!completed.has(day));
+  if(nextDay){jumpToDay(nextDay);onCompleteNext(selectedHabit.id)}
+ };
+ const pageCount=selectedHabit?Math.ceil(selectedHabit.days/PAGE_SIZE):0;
+ const currentPage=selectedHabit?Math.floor(dayStart/PAGE_SIZE)+1:1;
+ 
  return <section className="page habitsPage">
   <div className="sectionTop">
    <div><span className="eyebrow">DAILY CONSISTENCY</span><h1>Habits</h1><p>Build habits one day at a time. Track progress, keep your streak visible, and stay consistent.</p></div>
    <button type="button" className="primary habitAddTop" onClick={onAdd} disabled={habits.length>=6}><Plus size={16}/> Add habit <span>{habits.length}/6</span></button>
   </div>
-  {habits.length===0?<div className="panel habitEmpty"><div className="habitEmptyIcon"><CheckCircle2 size={22}/></div><h2>Start your first habit</h2><p>Add up to 6 habits and choose anywhere from 5 to 100 days.</p><button type="button" className="primary" onClick={onAdd}><Plus size={16}/> Add first habit</button></div>:<div className="habitList">{habits.map((h,index)=>{
-   const done=(h.completed||[]).length;
-   const progress=h.days?Math.round((done/h.days)*100):0;
-   const {current,best}=getHabitStreaks(h.completed,h.days);
-   const nextDay=Array.from({length:h.days},(_,i)=>i+1).find(day=>!(h.completed||[]).includes(day));
-   return <article className="panel habitCard" key={h.id} style={{"--habit-index":index}}>
-    <div className="habitCardHead">
-      <div className="habitTitleWrap">
-       <div className="habitIndex">{String(index+1).padStart(2,'0')}</div>
-       <div className="habitTitleText">
-        {editingId===h.id?<input autoFocus className="habitNameInput" value={draft} maxLength={40} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();commitEdit(h.id)}if(e.key==='Escape'){e.preventDefault();skipEditBlur.current=true;cancelEdit();e.currentTarget.blur()}}} onBlur={()=>{if(skipEditBlur.current){skipEditBlur.current=false;return}if(editingId===h.id)commitEdit(h.id)}}/>:<h2>{h.name}</h2>}
-        <small>{done===h.days?'Plan complete':nextDay?`Next: Day ${nextDay}`:'All days completed'}</small>
+  {habits.length===0?<div className="panel habitEmpty"><div className="habitEmptyIcon"><CheckCircle2 size={22}/></div><h2>Start your first habit</h2><p>Add up to 6 habits and choose anywhere from 5 to 100 days.</p><button type="button" className="primary" onClick={onAdd}><Plus size={16}/> Add first habit</button></div>:
+   <>
+    <div className="habitSwitcher" aria-label="Choose a habit">
+     <div className="habitSwitcherHead"><div><span>YOUR HABITS</span><small>Jump between habits without scrolling through every plan.</small></div><b>{habits.length}/6 active</b></div>
+     <div className="habitSwitcherGrid">
+      {habits.map((h,index)=>{
+       const done=(h.completed||[]).length;
+       const progress=h.days?Math.round((done/h.days)*100):0;
+       const {current}=getHabitStreaks(h.completed,h.days);
+       const nextDay=Array.from({length:h.days},(_,i)=>i+1).find(day=>!(h.completed||[]).includes(day));
+       return <button type="button" key={h.id} className={`habitMini ${selectedHabit?.id===h.id?'active':''}`} onClick={()=>openHabit(h.id)}>
+        <span className="habitMiniIndex">{String(index+1).padStart(2,'0')}</span>
+        <span className="habitMiniBody"><strong>{h.name}</strong><small>{progress}% · {current}d streak · {nextDay?`Day ${nextDay}`:'Complete'}</small><span className="habitMiniBar"><i style={{width:`${progress}%`}}/></span></span>
+        <ArrowUpRight size={14}/>
+       </button>
+      })}
+     </div>
+    </div>
+    {selectedHabit&&(()=>{
+      const h=selectedHabit;
+      const index=habits.findIndex(item=>item.id===h.id);
+      const done=(h.completed||[]).length;
+      const progress=h.days?Math.round((done/h.days)*100):0;
+      const {current,best}=getHabitStreaks(h.completed,h.days);
+      const nextDay=Array.from({length:h.days},(_,i)=>i+1).find(day=>!(h.completed||[]).includes(day));
+      const visibleDays=Array.from({length:Math.min(PAGE_SIZE,Math.max(0,h.days-dayStart))},(_,i)=>dayStart+i+1);
+      const rangeStart=dayStart+1;
+      const rangeEnd=Math.min(dayStart+PAGE_SIZE,h.days);
+      return <article className="panel habitCard habitCardFocused" key={h.id} style={{"--habit-index":Math.max(0,index)}}>
+       <div className="habitCardHead">
+        <div className="habitTitleWrap">
+         <div className="habitIndex">{String(index+1).padStart(2,'0')}</div>
+         <div className="habitTitleText">
+          {editingId===h.id?<input autoFocus className="habitNameInput" value={draft} maxLength={40} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();commitEdit(h.id)}if(e.key==='Escape'){e.preventDefault();skipEditBlur.current=true;cancelEdit();e.currentTarget.blur()}}} onBlur={()=>{if(skipEditBlur.current){skipEditBlur.current=false;return}if(editingId===h.id)commitEdit(h.id)}}/>:<h2>{h.name}</h2>}
+          <small>{done===h.days?'Plan complete':nextDay?`Next: Day ${nextDay}`:'All days completed'}</small>
+         </div>
+        </div>
+        <div className="habitCardActions">
+         <label className="habitDaysControl"><span>Days</span><input type="number" min="5" max="100" value={daysDrafts[h.id] ?? h.days} onFocus={()=>beginDaysEdit(h)} onChange={e=>setDaysDraft(h.id,e.target.value)} onBlur={()=>commitDays(h)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();commitDays(h);e.currentTarget.blur()}if(e.key==='Escape'){e.preventDefault();skipDaysBlur.current.add(h.id);setDaysDrafts(prev=>{const next={...prev};delete next[h.id];return next});e.currentTarget.blur()}}} aria-label={`Number of days for ${h.name}`}/></label>
+         <button type="button" className="iconbtn habitIconBtn" onClick={()=>beginEdit(h)} title="Rename habit"><Edit3 size={15}/></button>
+         <button type="button" className="iconbtn habitIconBtn danger" onClick={()=>onDelete(h.id)} title="Delete habit"><Trash2 size={15}/></button>
+        </div>
        </div>
-      </div>
-      <div className="habitCardActions">
-       <label className="habitDaysControl"><span>Days</span><input type="number" min="5" max="100" value={daysDrafts[h.id] ?? h.days} onFocus={()=>beginDaysEdit(h)} onChange={e=>setDaysDraft(h.id,e.target.value)} onBlur={()=>commitDays(h)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();commitDays(h);e.currentTarget.blur()}if(e.key==='Escape'){e.preventDefault();skipDaysBlur.current.add(h.id);setDaysDrafts(prev=>{const next={...prev};delete next[h.id];return next});e.currentTarget.blur()}}} aria-label={`Number of days for ${h.name}`}/></label>
-       <button type="button" className="iconbtn habitIconBtn" onClick={()=>beginEdit(h)} title="Rename habit"><Edit3 size={15}/></button>
-       <button type="button" className="iconbtn habitIconBtn danger" onClick={()=>onDelete(h.id)} title="Delete habit"><Trash2 size={15}/></button>
-      </div>
-    </div>
-
-    <div className="habitSummary">
-      <div className="habitStat"><span>Progress</span><b>{progress}%</b></div>
-      <div className="habitStat"><span>Current streak</span><b>{current} {current===1?'day':'days'}</b></div>
-      <div className="habitStat"><span>Best streak</span><b>{best} {best===1?'day':'days'}</b></div>
-      <button type="button" className="habitQuickAction" onClick={()=>onCompleteNext(h.id)} disabled={!nextDay} title={nextDay?`Complete day ${nextDay}`:'All days completed'}><Check size={14}/>{nextDay?`Complete day ${nextDay}`:'All complete'}</button>
-    </div>
-
-    <div className="habitMeta"><span>{done} of {h.days} days completed</span><b>{h.days}-day plan</b></div>
-    <div className="habitProgress" role="progressbar" aria-valuemin="0" aria-valuemax={h.days} aria-valuenow={done} aria-label={`${h.name} progress`}><span style={{width:`${progress}%`}}/></div>
-
-    <div className="habitTimeline" aria-label={`${h.name} habit days`}>{Array.from({length:h.days},(_,i)=>{
-      const day=i+1,checked=(h.completed||[]).includes(day);
-      const stateText=checked?'Completed':day===nextDay?'Up next':'Open';
-      return <button type="button" key={day} className={`habitDayRow ${checked?'checked':''} ${day===nextDay?'next':''}`} onClick={()=>onToggleDay(h.id,day)} aria-label={`${h.name}, day ${day}${checked?' completed':''}`}>
-       <span className="habitDayNumber">{String(day).padStart(2,'0')}</span>
-       <span className="habitDayCheck">{checked&&<Check size={14}/>}</span>
-       <span className="habitDayCopy"><b>Day {day}</b><small>{stateText}</small></span>
-       <span className="habitDayArrow"><ArrowUpRight size={14}/></span>
-      </button>;
-     })}</div>
-
-    <div className="habitFooter"><span><CheckCircle2 size={14}/> Tap a day to mark it complete</span><div><button type="button" className="habitResetBtn" onClick={()=>onReset(h.id)} disabled={!done}><RotateCcw size={13}/> Reset progress</button><span>{h.days} day plan</span></div></div>
-   </article>
-  })}</div>}
+       <div className="habitSummary">
+        <div className="habitStat"><span>Progress</span><b>{progress}%</b></div>
+        <div className="habitStat"><span>Current streak</span><b>{current} {current===1?'day':'days'}</b></div>
+        <div className="habitStat"><span>Best streak</span><b>{best} {best===1?'day':'days'}</b></div>
+        <button type="button" className="habitQuickAction" onClick={completeNext} disabled={!nextDay} title={nextDay?`Complete day ${nextDay}`:'All days completed'}><Check size={14}/>{nextDay?`Complete day ${nextDay}`:'All complete'}</button>
+       </div>
+       <div className="habitMeta"><span>{done} of {h.days} days completed</span><b>{h.days}-day plan</b></div>
+       <div className="habitProgress" role="progressbar" aria-valuemin="0" aria-valuemax={h.days} aria-valuenow={done} aria-label={`${h.name} progress`}><span style={{width:`${progress}%`}}/></div>
+       <div className="habitRangeBar">
+        <button type="button" className="habitRangeBtn" onClick={()=>setDayStart(s=>Math.max(0,s-PAGE_SIZE))} disabled={dayStart===0} aria-label="Previous 10 days"><ChevronDown size={15} style={{transform:'rotate(90deg)'}}/></button>
+        <div><b>Days {rangeStart}–{rangeEnd}</b><span>Window {currentPage} of {pageCount}</span></div>
+        <button type="button" className="habitRangeBtn" onClick={()=>setDayStart(s=>Math.min(Math.max(0,Math.floor((h.days-1)/PAGE_SIZE)*PAGE_SIZE),s+PAGE_SIZE))} disabled={rangeEnd>=h.days} aria-label="Next 10 days"><ChevronDown size={15} style={{transform:'rotate(-90deg)'}}/></button>
+       </div>
+       <div className="habitTimeline" aria-label={`${h.name} habit days`}>
+        {visibleDays.map(day=>{
+         const checked=(h.completed||[]).includes(day);
+         const stateText=checked?'Completed':day===nextDay?'Up next':'Open';
+         return <button type="button" key={day} className={`habitDayRow ${checked?'checked':''} ${day===nextDay?'next':''}`} onClick={()=>onToggleDay(h.id,day)} aria-label={`${h.name}, day ${day}${checked?' completed':''}`}>
+          <span className="habitDayNumber">{String(day).padStart(2,'0')}</span>
+          <span className="habitDayCheck">{checked&&<Check size={14}/>}</span>
+          <span className="habitDayCopy"><b>Day {day}</b><small>{stateText}</small></span>
+          <span className="habitDayArrow"><ArrowUpRight size={14}/></span>
+         </button>;
+        })}
+       </div>
+       <div className="habitFooter"><span><CheckCircle2 size={14}/> Tap a day to mark it complete</span><div><button type="button" className="habitResetBtn" onClick={()=>onReset(h.id)} disabled={!done}><RotateCcw size={13}/> Reset progress</button><span>{h.days} day plan</span></div></div>
+      </article>;
+    })()}
+   </>
+  }
  </section>
 }
 
