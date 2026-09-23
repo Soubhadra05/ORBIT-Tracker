@@ -3812,3 +3812,145 @@ main>.page,
 :root[data-theme="light"] .habitsPage .habitMini.active{
   background:rgba(124,77,255,.055);
 }
+
+/* =========================================================
+   Habit Tracker v7 — balanced 1–6 habit rail + reduced clutter
+   ========================================================= */
+.habitsPage .habitSwitcher{
+  margin-bottom:12px;
+  padding:11px;
+  border-radius:15px;
+}
+.habitsPage .habitSwitcherHead{
+  margin:0 2px 8px;
+  min-height:26px;
+}
+.habitsPage .habitSwitcherHead small{
+  max-width:520px;
+}
+.habitsPage .habitSwitcherGrid{
+  grid-template-columns:repeat(var(--habit-count, 1), minmax(0, 1fr));
+  gap:7px;
+  width:100%;
+}
+.habitsPage .habitMini{
+  min-width:0;
+  min-height:62px;
+  padding:8px 9px;
+  grid-template-columns:28px minmax(0,1fr) 15px;
+  gap:8px;
+  border-radius:11px;
+}
+.habitsPage .habitMiniIndex{
+  width:28px;
+  height:28px;
+}
+.habitsPage .habitMiniBody strong{
+  font-size:10.5px;
+}
+.habitsPage .habitMiniBody small{
+  font-size:7.8px;
+}
+.habitsPage .habitMiniBar{margin-top:1px}
+.habitsPage .habitCardFocused{
+  border-radius:17px;
+  padding:17px;
+}
+.habitsPage .habitCardHead{
+  margin-bottom:12px;
+}
+.habitsPage .habitTitleWrap{gap:10px}
+.habitsPage .habitIndex{
+  width:32px;
+  height:32px;
+  border-radius:9px;
+}
+.habitsPage .habitTitleWrap h2{font-size:18px}
+.habitsPage .habitTitleText{gap:3px}
+.habitsPage .habitTitleText small{font-size:8.5px}
+.habitsPage .habitSummary{
+  grid-template-columns:repeat(3,minmax(0,1fr)) minmax(145px,175px);
+  gap:7px;
+  margin:0 0 10px 4px;
+}
+.habitsPage .habitStat{
+  min-height:45px;
+  padding:8px 10px;
+  border-radius:10px;
+  gap:3px;
+}
+.habitsPage .habitStat span{font-size:8px}
+.habitsPage .habitStat b{font-size:11px}
+.habitsPage .habitQuickAction{
+  min-height:45px;
+  border-radius:10px;
+  padding:0 10px;
+  font-size:9px;
+}
+.habitsPage .habitMeta{
+  margin:0 4px 6px;
+  font-size:9px;
+}
+.habitsPage .habitMeta b{font-size:9px}
+.habitsPage .habitProgress{
+  height:4px;
+  margin:0 4px 11px;
+}
+.habitsPage .habitRangeBar{
+  grid-template-columns:34px minmax(0,1fr) 34px;
+  gap:7px;
+  margin:0 4px 8px;
+}
+.habitsPage .habitRangeBtn{
+  width:34px;
+  height:29px;
+  border-radius:8px;
+}
+.habitsPage .habitRangeBar b{font-size:9px}
+.habitsPage .habitRangeBar span{font-size:7.5px}
+.habitsPage .habitTimeline{
+  gap:6px;
+  margin:0 4px;
+}
+.habitsPage .habitDayRow{
+  min-height:50px;
+  padding:7px 10px;
+  grid-template-columns:34px 22px minmax(0,1fr) 22px;
+  gap:8px;
+  border-radius:11px;
+}
+.habitsPage .habitDayCheck{
+  width:21px;
+  height:21px;
+  border-radius:6px;
+}
+.habitsPage .habitDayCopy{gap:2px}
+.habitsPage .habitDayCopy b{font-size:10.5px}
+.habitsPage .habitDayCopy small{font-size:8px}
+.habitsPage .habitFooter{
+  margin:10px 4px 0;
+  padding-top:9px;
+  font-size:8.5px;
+}
+.habitsPage .habitFooter>div{gap:8px}
+.habitsPage .habitResetBtn{font-size:8.5px}
+
+@media(max-width:1100px){
+  .habitsPage .habitSwitcherGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .habitsPage .habitSummary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .habitsPage .habitQuickAction{grid-column:auto}
+}
+@media(max-width:760px){
+  .habitsPage .habitSwitcherGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .habitsPage .habitMini{min-height:58px}
+  .habitsPage .habitSummary{grid-template-columns:repeat(2,minmax(0,1fr));margin-left:2px;margin-right:2px}
+  .habitsPage .habitQuickAction{grid-column:1 / -1}
+}
+@media(max-width:520px){
+  .habitsPage .habitSwitcherGrid{grid-template-columns:1fr}
+  .habitsPage .habitSwitcher{padding:9px}
+  .habitsPage .habitSwitcherHead{align-items:flex-start}
+  .habitsPage .habitMini{min-height:54px}
+  .habitsPage .habitCardFocused{padding:14px}
+  .habitsPage .habitDayRow{min-height:48px;padding:6px 8px;grid-template-columns:30px 21px minmax(0,1fr) 20px}
+}

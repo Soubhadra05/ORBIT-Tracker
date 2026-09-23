@@ -800,7 +800,7 @@ function Habits({habits,onAdd,onUpdate,onDelete,onToggleDay,onChangeDays,onReset
    <>
     <div className="habitSwitcher" aria-label="Choose a habit">
      <div className="habitSwitcherHead"><div><span>YOUR HABITS</span><small>Jump between habits without scrolling through every plan.</small></div><b>{habits.length}/6 active</b></div>
-     <div className="habitSwitcherGrid">
+     <div className="habitSwitcherGrid" style={{"--habit-count":Math.min(6,Math.max(1,habits.length))}}>
       {habits.map((h,index)=>{
        const done=(h.completed||[]).length;
        const progress=h.days?Math.round((done/h.days)*100):0;
