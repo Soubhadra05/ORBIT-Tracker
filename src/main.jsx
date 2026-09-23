@@ -719,12 +719,12 @@ function Habits({habits,onAdd,onUpdate,onDelete,onToggleDay,onChangeDays}){
  const [draft,setDraft]=useState('');
  const beginEdit=h=>{setEditingId(h.id);setDraft(h.name)};
  const commitEdit=id=>{const name=draft.trim();if(name)onUpdate(id,{name});setEditingId(null);setDraft('')};
- return <div className="view habitsView">
+ return <section className="page habitsPage">
   <div className="sectionTop">
    <div><span className="eyebrow">DAILY CONSISTENCY</span><h1>Habits</h1><p>Build habits one day at a time. Keep the streak visible and easy to follow.</p></div>
    <button type="button" className="primary habitAddTop" onClick={onAdd} disabled={habits.length>=6}><Plus size={16}/> Add habit <span>{habits.length}/6</span></button>
   </div>
-  {habits.length===0?<div className="panel habitEmpty"><div className="habitEmptyIcon"><CheckCircle2 size={22}/></div><h2>Start your first habit</h2><p>Add up to 6 habits and choose anywhere from 5 to 100 days.</p><button type="button" className="primary" onClick={onAdd}><Plus size={16}/> Add first habit</button></div>:<div className="habitList">{habits.map((h,index)=>{const done=(h.completed||[]).length;const progress=Math.round((done/h.days)*100);return <div className="panel habitCard" key={h.id}>
+  {habits.length===0?<div className="panel habitEmpty"><div className="habitEmptyIcon"><CheckCircle2 size={22}/></div><h2>Start your first habit</h2><p>Add up to 6 habits and choose anywhere from 5 to 100 days.</p><button type="button" className="primary" onClick={onAdd}><Plus size={16}/> Add first habit</button></div>:<div className="habitList">{habits.map((h,index)=>{const done=(h.completed||[]).length;const progress=Math.round((done/h.days)*100);return <div className="panel habitCard" key={h.id} style={{"--habit-index":index}}>
     <div className="habitCardHead">
       <div className="habitTitleWrap">
        <div className="habitIndex">{String(index+1).padStart(2,'0')}</div>
@@ -741,7 +741,7 @@ function Habits({habits,onAdd,onUpdate,onDelete,onToggleDay,onChangeDays}){
     <div className="habitDaysGrid" aria-label={`${h.name} habit days`}>{Array.from({length:h.days},(_,i)=>{const day=i+1,checked=(h.completed||[]).includes(day);return <button type="button" key={day} className={`habitDay ${checked?'checked':''}`} onClick={()=>onToggleDay(h.id,day)} aria-label={`${h.name}, day ${day}${checked?' completed':''}`}><span className="habitCheck">{checked&&<Check size={12}/>}</span><em>{day}</em></button>})}</div>
     <div className="habitFooter"><span><CheckCircle2 size={14}/> Tap a day to mark it complete</span><span>{h.days} day plan</span></div>
    </div>})}</div>}
- </div>
+ </section>
 }
 
 function SettingsPage({theme,setTheme,user,login,logout,onOpen}){

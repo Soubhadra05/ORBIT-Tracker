@@ -2994,3 +2994,103 @@ main>.page,
 :root[data-theme="light"] .habitProgress span{background:linear-gradient(90deg,#7c4dff,#9b7cff)}
 :root[data-theme="light"] .habitDay.checked{background:rgba(124,77,255,.08);border-color:rgba(124,77,255,.38)}
 :root[data-theme="light"] .habitDay.checked .habitCheck{background:#7c4dff;border-color:#7c4dff}
+
+/* =========================================================
+   Habit Tracker — responsive layout + ORBIT motion pass
+   Keep the habit workspace inside the same scrolling page shell
+   used by every other ORBIT section.
+   ========================================================= */
+.side{
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#2b2b2b transparent;
+}
+.side::-webkit-scrollbar{width:6px}
+.side::-webkit-scrollbar-track{background:transparent}
+.side::-webkit-scrollbar-thumb{background:#2b2b2b;border-radius:99px}
+.side::-webkit-scrollbar-thumb:hover{background:#3b3b3b}
+
+.habitsPage{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  padding-bottom:40px;
+}
+.habitsPage .sectionTop{
+  width:100%;
+  min-width:0;
+}
+.habitsPage .sectionTop>div:first-child{min-width:0}
+.habitList{
+  width:100%;
+  min-width:0;
+}
+.habitCard{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  animation:orbit-fade-up .42s var(--ease) both;
+  animation-delay:calc(var(--habit-index,0) * 55ms);
+  transition:border-color .32s var(--ease),background .32s ease,box-shadow .32s var(--ease),transform .32s var(--ease);
+}
+.habitCard:hover{
+  border-color:#353535;
+  box-shadow:0 14px 36px rgba(0,0,0,.16);
+}
+.habitCardHead{
+  min-width:0;
+}
+.habitTitleWrap{
+  flex:1 1 auto;
+  min-width:0;
+}
+.habitTitleWrap h2{min-width:0}
+.habitCardActions{
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.habitDaysGrid{
+  width:100%;
+  min-width:0;
+  max-height:none!important;
+  overflow:visible!important;
+}
+.habitDay{
+  min-width:0;
+  transition:transform .24s var(--ease),border-color .24s ease,background .24s ease,color .24s ease,box-shadow .24s ease!important;
+}
+.habitDay:hover{transform:translateY(-2px)!important;box-shadow:0 8px 22px rgba(0,0,0,.16)}
+.habitDay:active{transform:translateY(0) scale(.98)!important}
+.habitDay.checked{box-shadow:0 0 0 1px rgba(139,92,246,.08),0 8px 22px rgba(139,92,246,.08)}
+.habitEmpty{animation:orbit-fade-up .42s var(--ease) both}
+
+@media(max-width:1000px){
+  .habitsPage{padding-top:28px}
+  .habitCardHead{align-items:flex-start;flex-wrap:wrap}
+  .habitTitleWrap{flex:1 1 320px}
+  .habitCardActions{flex:1 1 100%;width:100%;justify-content:flex-end}
+}
+@media(max-width:700px){
+  .habitsPage{padding-left:18px!important;padding-right:18px!important;padding-bottom:30px}
+  .habitsPage .sectionTop{gap:16px}
+  .habitCardActions{justify-content:flex-start}
+  .habitDaysControl{margin-left:0!important}
+  .habitNameInput{width:min(100%,320px)!important}
+  .habitDaysGrid{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media(max-width:520px){
+  .habitsPage{padding-left:14px!important;padding-right:14px!important}
+  .habitCardHead{gap:12px}
+  .habitCardActions{gap:6px}
+  .habitDaysControl{flex:0 0 auto}
+  .habitDaysGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .habitDay{min-height:42px}
+  .habitFooter{margin-top:9px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .habitCard,.habitEmpty{animation:none!important}
+  .habitDay,.habitCard{transition:none!important}
+}
