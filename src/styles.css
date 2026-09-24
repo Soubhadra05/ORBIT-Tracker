@@ -3954,3 +3954,208 @@ main>.page,
   .habitsPage .habitCardFocused{padding:14px}
   .habitsPage .habitDayRow{min-height:48px;padding:6px 8px;grid-template-columns:30px 21px minmax(0,1fr) 20px}
 }
+
+
+/* =========================================================
+   Habit Tracker v8 — Notion-like neutral finish + sticky habit dock
+   ========================================================= */
+.habitsPage .habitSwitcher{
+  position:sticky !important;
+  top:84px !important;
+  z-index:7 !important;
+  width:100%;
+  margin:0 0 14px;
+  padding:10px 12px 11px;
+  border:1px solid #252525;
+  border-radius:14px;
+  background:rgba(8,8,8,.94);
+  box-shadow:0 10px 28px rgba(0,0,0,.22);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}
+.habitsPage .habitSwitcherHead{
+  margin:0 2px 8px;
+  min-height:22px;
+}
+.habitsPage .habitSwitcherHead span{
+  color:#a0a0a0;
+  letter-spacing:1.55px;
+  font-size:9px;
+}
+.habitsPage .habitSwitcherHead small{
+  color:#666;
+  font-size:8.5px;
+}
+.habitsPage .habitSwitcherHead>b{
+  color:#cfcfcf;
+  border:1px solid #2b2b2b;
+  background:#111;
+  padding:5px 8px;
+  border-radius:999px;
+}
+.habitsPage .habitSwitcherGrid{
+  grid-template-columns:repeat(auto-fit,minmax(0,1fr));
+  gap:7px;
+}
+.habitsPage .habitMini{
+  min-width:0;
+  min-height:54px;
+  padding:7px 9px;
+  grid-template-columns:28px minmax(0,1fr) 14px;
+  gap:8px;
+  border:1px solid #292929;
+  border-radius:10px;
+  background:#101010;
+  color:#999;
+  box-shadow:none;
+  transition:transform .2s var(--ease),background .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease;
+}
+.habitsPage .habitMini:hover{
+  transform:translateY(-1px);
+  border-color:#3a3a3a;
+  background:#141414;
+  color:#d4d4d4;
+  box-shadow:0 8px 18px rgba(0,0,0,.14);
+}
+.habitsPage .habitMini.active{
+  border-color:#666;
+  background:#151515;
+  color:#f2f2f2;
+  box-shadow:inset 2px 0 #9a9a9a;
+}
+.habitsPage .habitMiniIndex{
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  color:#d3d3d3;
+  background:#171717;
+  border:1px solid #333;
+}
+.habitsPage .habitMini.active .habitMiniIndex{
+  color:#fff;
+  border-color:#666;
+  background:#1c1c1c;
+}
+.habitsPage .habitMiniBody strong{font-size:10.5px;color:inherit}
+.habitsPage .habitMiniBody small{font-size:7.7px;color:#777}
+.habitsPage .habitMiniBar{height:2px;background:#242424}
+.habitsPage .habitMiniBar i{background:#777;box-shadow:none}
+.habitsPage .habitMini>svg{color:#666}
+.habitsPage .habitMini:hover>svg,.habitsPage .habitMini.active>svg{color:#ddd}
+
+/* Keep the tracker card itself quieter; reserve the accent for active controls. */
+.habitsPage .habitCardFocused{
+  border-color:#262626;
+  box-shadow:none;
+  border-radius:15px;
+  padding:15px;
+}
+.habitsPage .habitCardFocused::before{background:#777;opacity:.8}
+.habitsPage .habitIndex{
+  background:#111;
+  border-color:#303030;
+  color:#c9c9c9;
+}
+.habitsPage .habitSummary{
+  grid-template-columns:repeat(3,minmax(0,1fr)) minmax(132px,150px);
+  gap:6px;
+  margin:0 0 9px 0;
+}
+.habitsPage .habitStat{
+  min-height:39px;
+  padding:7px 9px;
+  border-radius:9px;
+  border-color:#242424;
+  background:#0f0f0f;
+}
+.habitsPage .habitStat span{font-size:7.5px;color:#6f6f6f}
+.habitsPage .habitStat b{font-size:10.5px;color:#e5e5e5}
+.habitsPage .habitQuickAction{
+  min-height:39px;
+  border-radius:9px;
+  padding:0 9px;
+  font-size:8.5px;
+  border-color:#333;
+  background:#131313;
+  color:#ddd;
+}
+.habitsPage .habitQuickAction:hover:not(:disabled){
+  background:#181818;
+  border-color:#555;
+  color:#fff;
+}
+.habitsPage .habitMeta{font-size:8.5px}
+.habitsPage .habitMeta b{font-size:8.5px;color:#d2d2d2}
+.habitsPage .habitProgress{background:#202020;height:3px;margin-bottom:9px}
+.habitsPage .habitProgress span{background:#777}
+.habitsPage .habitRangeBar{margin:0 2px 7px}
+.habitsPage .habitRangeBtn{
+  width:32px;
+  height:28px;
+  border-radius:8px;
+  background:#101010;
+  border-color:#282828;
+  color:#777;
+}
+.habitsPage .habitRangeBtn:hover:not(:disabled){
+  background:#151515;
+  border-color:#444;
+  color:#ddd;
+}
+.habitsPage .habitDayRow{
+  min-height:47px;
+  padding:6px 9px;
+  border-color:#242424;
+  border-radius:10px;
+  background:#101010;
+}
+.habitsPage .habitDayRow:hover{
+  background:#151515;
+  border-color:#3a3a3a;
+}
+.habitsPage .habitDayRow.checked{
+  border-color:#3d3d3d;
+  background:#141414;
+  box-shadow:inset 2px 0 #777;
+}
+.habitsPage .habitDayRow.next{
+  border-color:#4a4a4a;
+  box-shadow:inset 2px 0 #aaa;
+}
+.habitsPage .habitDayCheck{border-color:#4d4d4d;background:#0f0f0f}
+.habitsPage .habitDayRow.checked .habitDayCheck{border-color:#8a8a8a;background:#777;color:#fff;box-shadow:none}
+.habitsPage .habitDayRow.checked .habitDayCopy small{color:#b5b5b5}
+.habitsPage .habitDayRow.next .habitDayCopy small{color:#d0d0d0}
+.habitsPage .habitDayArrow{color:#555}
+.habitsPage .habitDayRow:hover .habitDayArrow{color:#ddd;background:#1b1b1b}
+.habitsPage .habitFooter{border-top-color:#232323}
+.habitsPage .habitResetBtn:hover:not(:disabled){color:#e0e0e0}
+
+@media(max-width:900px){
+  .habitsPage .habitSwitcher{top:76px !important}
+}
+@media(max-width:700px){
+  .habitsPage .habitSwitcher{
+    top:70px !important;
+    padding:9px;
+    border-radius:12px;
+  }
+  .habitsPage .habitSwitcherGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px){
+  .habitsPage .habitSwitcher{top:66px !important}
+  .habitsPage .habitSwitcherGrid{grid-template-columns:1fr}
+  .habitsPage .habitSummary{grid-template-columns:1fr 1fr}
+  .habitsPage .habitQuickAction{grid-column:1 / -1}
+}
+:root[data-theme="light"] .habitsPage .habitSwitcher{background:rgba(255,255,255,.94);border-color:#e4e4e4;box-shadow:0 10px 28px rgba(0,0,0,.08)}
+:root[data-theme="light"] .habitsPage .habitSwitcherHead span{color:#747474}
+:root[data-theme="light"] .habitsPage .habitSwitcherHead small{color:#999}
+:root[data-theme="light"] .habitsPage .habitSwitcherHead>b{color:#444;background:#fafafa;border-color:#ddd}
+:root[data-theme="light"] .habitsPage .habitMini{background:#fafafa;border-color:#e5e5e5;color:#737373}
+:root[data-theme="light"] .habitsPage .habitMini:hover{background:#f5f5f5;border-color:#d4d4d4;color:#333}
+:root[data-theme="light"] .habitsPage .habitMini.active{background:#f1f1f1;border-color:#cfcfcf;color:#111;box-shadow:inset 2px 0 #777}
+:root[data-theme="light"] .habitsPage .habitMiniIndex{background:#f1f1f1;border-color:#d9d9d9;color:#666}
+:root[data-theme="light"] .habitsPage .habitMini.active .habitMiniIndex{background:#fff;border-color:#bbb;color:#222}
+:root[data-theme="light"] .habitsPage .habitMiniBar{background:#e8e8e8}
+:root[data-theme="light"] .habitsPage .habitMiniBar i{background:#8b8b8b}
