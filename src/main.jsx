@@ -686,8 +686,9 @@ function App(){
  function changeHabitDays(id,value){const days=Math.max(5,Math.min(100,Number(value)||5));setHabits(prev=>prev.map(h=>h.id===id?{...h,days,completed:(h.completed||[]).filter(d=>d<=days)}:h))}
  function resetHabit(id){
   const habit=habits.find(h=>h.id===id);
-  if(!habit||(habit.completed||[]).length===0)return;
-  if(!window.confirm(`Reset all progress for \"${habit.name}\"?`))return;
+  if(!habit)return;
+  const hadProgress=(habit.completed||[]).length>0;
+  if(hadProgress&&!window.confirm(`Reset all progress for \"${habit.name}\"?`))return;
   setHabits(prev=>prev.map(h=>h.id===id?{...h,completed:[]}:h));
  }
  function completeNextHabitDay(id){
@@ -864,7 +865,7 @@ function Habits({habits,onAdd,onUpdate,onDelete,onToggleDay,onChangeDays,onReset
          </button>;
         })}
        </div>
-       <div className="habitFooter"><span><CheckCircle2 size={14}/> Tap a day to mark it complete</span><div><button type="button" className="habitResetBtn" onClick={()=>onReset(h.id)} disabled={!done}><RotateCcw size={13}/> Reset progress</button><span>{h.days} day plan</span></div></div>
+       <div className="habitFooter"><span><CheckCircle2 size={14}/> Tap a day to mark it complete</span><div><button type="button" className="habitResetBtn" onClick={()=>onReset(h.id)} title={done?`Reset all progress for ${h.name}`:'No completed days to reset'}><RotateCcw size={13}/> Reset progress</button><span>{h.days} day plan</span></div></div>
       </article>;
     })()}
    </>

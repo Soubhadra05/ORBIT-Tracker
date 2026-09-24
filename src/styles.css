@@ -4159,3 +4159,72 @@ main>.page,
 :root[data-theme="light"] .habitsPage .habitMini.active .habitMiniIndex{background:#fff;border-color:#bbb;color:#222}
 :root[data-theme="light"] .habitsPage .habitMiniBar{background:#e8e8e8}
 :root[data-theme="light"] .habitsPage .habitMiniBar i{background:#8b8b8b}
+
+
+/* =========================================================
+   Habit Tracker v9 — refined sticky dock + reliable reset control
+   ========================================================= */
+.habitsPage .habitSwitcher{
+  top:10px !important;
+  margin-bottom:12px;
+  border-radius:14px;
+  box-shadow:0 12px 26px rgba(0,0,0,.18);
+}
+.habitsPage .habitSwitcherHead{
+  margin-bottom:7px;
+}
+.habitsPage .habitSwitcherGrid{
+  gap:6px;
+}
+.habitsPage .habitMini{
+  min-height:50px;
+  padding:6px 8px;
+  grid-template-columns:26px minmax(0,1fr) 14px;
+  gap:7px;
+}
+.habitsPage .habitMiniIndex{
+  width:26px;
+  height:26px;
+  border-radius:8px;
+}
+.habitsPage .habitMiniBody{gap:3px}
+.habitsPage .habitMiniBody strong{font-size:10px}
+.habitsPage .habitMiniBody small{font-size:7.5px}
+.habitsPage .habitMiniBar{height:2px}
+.habitsPage .habitCardFocused{
+  scroll-margin-top:92px;
+}
+.habitsPage .habitResetBtn{
+  min-height:26px;
+  padding:3px 7px;
+  border:1px solid #252525;
+  border-radius:7px;
+  background:#101010;
+  color:#777;
+  cursor:pointer;
+  transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease;
+}
+.habitsPage .habitResetBtn:hover{
+  background:#171717;
+  border-color:#3a3a3a;
+  color:#d5d5d5;
+  transform:translateY(-1px);
+}
+.habitsPage .habitResetBtn:active{transform:translateY(0) scale(.98)}
+@media(max-width:700px){
+  .habitsPage .habitSwitcher{top:8px !important}
+}
+@media(max-width:520px){
+  .habitsPage .habitSwitcher{top:6px !important}
+  .habitsPage .habitResetBtn{width:auto}
+}
+:root[data-theme="light"] .habitsPage .habitResetBtn{
+  background:#f7f7f7;
+  border-color:#dedede;
+  color:#777;
+}
+:root[data-theme="light"] .habitsPage .habitResetBtn:hover{
+  background:#efefef;
+  border-color:#cfcfcf;
+  color:#222;
+}
