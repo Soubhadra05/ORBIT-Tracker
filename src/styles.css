@@ -4436,3 +4436,37 @@ main>.page,
 @media (max-width:520px){
   .habitsPage .habitSwitcher{top:auto !important}
 }
+
+/* Neutral time fields — match ORBIT's monochrome boxes */
+.timeFieldButton{
+  background:#0d0d0d!important;
+  border-color:#2b2b2b!important;
+  color:#fff!important;
+  box-shadow:none!important;
+  border-radius:12px!important;
+}
+.timeFieldButton::after{display:none!important}
+.timeFieldButton:hover,
+.timeFieldButton.open{
+  background:#101010!important;
+  border-color:#4a4a4a!important;
+  box-shadow:0 0 0 3px rgba(255,255,255,.04)!important;
+  transform:none!important;
+}
+.timeFieldButton:active{background:#0f0f0f!important;transform:translateY(1px)!important}
+.timeFieldButton svg,
+.timeFieldButton.open svg{color:#7a7a7a!important;transform:none!important}
+.timeValue small{color:#666!important}
+.timeValue span{color:#ededed!important}
+:root[data-theme="light"] .timeFieldButton{
+  background:#fff!important;
+  border-color:#d8dbe0!important;
+  color:#16181d!important;
+  box-shadow:none!important;
+}
+:root[data-theme="light"] .timeFieldButton:hover,
+:root[data-theme="light"] .timeFieldButton.open{
+  background:#fff!important;
+  border-color:#9da6b4!important;
+  box-shadow:0 0 0 3px rgba(17,24,39,.05)!important;
+}
